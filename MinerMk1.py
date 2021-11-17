@@ -3,25 +3,36 @@
 Implimentation of a miner
 '''
 
-from "../Modules/BlockChain.py" import Block
+from BlockChain import DIFFICULTY, Block
 from hashlib import sha256
 
 class Miner:
     def __init__(self):
         self.block = None
+        self.difficulty = DIFFICULTY
 
-    def mine(self):
-        hash = None
+    # this is here for testing purposes
+    def override_difficulty(self, d):
+        self.difficulty = d
 
-        while not hash.startswith(Block.DIFFICULTY * "0"):
-            hash = sha256(str(self.block))
+    def mine(self, block):
+        '''
+        Finds an appropriate sha256 hash for a block
+        '''
+        self.block = block
+        hash = sha256(str(self.block).encode()).hexdigest()
+        while not hash.startswith(self.difficulty * "0"):
+            hash = sha256(str(self.block).encode()).hexdigest()
             self.block.nonce += 1
+        self.block.hash = hash
+        return hash
 
 if __name__ == "__main__":
     miner = Miner()
-    b = Block(0, 0, 0)
+    b = Block(0, 0, "~some long hex number from a wallet~")
 
     for i in range(5):
-        Block.add_transaction("random transcation, text wont matter")
+        b.add_transaction("Example transaction, not yet implimentated")
 
+    miner.mine(b)
     print(b)

@@ -8,7 +8,7 @@ Includes functions for keeping track and communicating with other nodes.
 # transactions per block
 TPB = 5
 # number of leading zeros on computed hashed
-DIFFICULTY = 2
+DIFFICULTY = 1
 # reward for mining Block
 COINBASE = 10
 
@@ -26,20 +26,21 @@ class Block:
         self.miner_pk = pk
         self.nonce = 0
 
-        self.transactions = 0
+        self.transactions = []
         self.hash = None
 
-    def add_transaction(transaction):
+    def add_transaction(self, transaction):
         self.transactions.append(transaction)
 
     def __str__(self):
         block_str = ""
-        block_str += "Block index: " + self.index + "\n"
-        block_str += "Prev Hash: " + self.prev_hash + "\n"
-        block_str += "Nonce: " + self.nonce + "\n"
-        block_str += "Coinbase: " + self.miner_pk + " " + str(COINBASE) + "\n"
+        block_str += "Block index: " + str(self.index) + "\n"
+        block_str += "Prev Hash: " + str(self.prev_hash) + "\n"
+        block_str += "Nonce: " + str(self.nonce) + "\n"
+        block_str += "Coinbase: " + str(COINBASE) + " -> " + str(self.miner_pk) + "\n"
+        block_str += "Transactions"
         for t in self.transactions:
             block_str += str(t) + "\n"
         if self.hash:
-            block_str += self.hash
+            block_str += "Hash: " + self.hash
         return block_str
