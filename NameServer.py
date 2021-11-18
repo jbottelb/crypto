@@ -15,43 +15,33 @@ of the name server or seed nodes. Listens on a specified port.
 '''
 
 import sys
-from flask import Flask
-import threading
 import socket
 import time
+import select
+BUF_SIZE = 10000
 
 active_seeds = set()
-possible_seeds = [("student11.cse.nd.edu", 12000), ("student12.cse.nd.edu", 12000)]
+possible_seeds = [("student11.cse.nd.edu", 12001), ("student12.cse.nd.edu", 12000)]
 
-app = Flask(__name__)
-
-# requests to our server will return the current active seeds
-@app.route("/")
 def return_active_seeds():
-    html_active_seeds = f"<p>Length={len(active_seeds)}<p>"
+    return_dict = {"Length": 0, "Active Seeds": []}
     for active_seed in active_seeds:
-        html_active_seeds.append("<p>" + active_seed[0] + ":" + str(active_seed[1]) + "<p>")
-    return html_active_seeds
+        return_dict["Active Seeds"].append(active_seed[0] + ":" + str(active_seed[1]))
+    return str(return_dict)
 
-# our daemon thread will ping the possible seed nodes
-# every <ping_interval> number of seconds
-def ping_seed_nodes(ping_interval):
-    latest_ping = time.time()
-    first_ping = True
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    while 1:
-        if time.time() - latest_ping > float(ping_interval) or first_ping:
-            for ps in possible_seeds:
-                try:
-                    # see if seed node is running
-                    sock.connect(ps)
-                    # yes -> add to active seeds
-                    active_seeds.add(ps)
-                except:
-                    # no -> remove from active seeds
-                    active_seeds.discard(ps)
-            first_ping = False
-            latest_ping = time.time()            
+def ping_seed_nodes():
+    for ps in possible_seeds:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            # see if seed node is running
+            sock.connect(ps)
+            # yes -> add to active seeds
+            active_seeds.add(ps)
+            print(f"Successful ping to {ps}")
+            sock.close()
+        except:
+            # no -> remove from active seeds
+            active_seeds.discard(ps)       
             
 
 def main():
@@ -59,12 +49,71 @@ def main():
         print("Usage: python3 NameServer.py <port> <ping_interval>")
         exit(-1)
     
-    name_server_port = sys.argv[1]
+    name_server_port = int(sys.argv[1])
     ping_interval = sys.argv[2]
-    pinging_thread = threading.Thread(target=ping_seed_nodes, args=(ping_interval,), daemon=True)
+    
+    main_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    main_sock.bind(("", name_server_port))
+    main_sock.listen()
+    
+    connections = {main_sock}
+    first_ping = True
+    latest_ping = time.time()
 
-    pinging_thread.start()
-    app.run(host='0.0.0.0', port=name_server_port)
+    while 1:
+        if int(time.time() - latest_ping) > int(ping_interval) or first_ping:
+            ping_seed_nodes()
+            first_ping = False
+            latest_ping = time.time()  
+              
+        # listen for a second for a readable socket
+        readable, writeable, exceptional = select.select(connections, [], [], 1)
+        for sock in readable:
+            # main socket has bytes to read, means we should accept 
+            # an incoming connection and store a socket for it
+            if sock == main_sock:
+                conn, addr = sock.accept()
+                connections.add(conn)
+                print(f"New connection from : {addr}")
+                responseString = return_active_seeds()
+                responseBytes = bytearray(responseString.encode('utf-8'))
+                conn.sendall(responseBytes)
+            # otherwise, we have a client making a request or closing
+            # a connection
+            else:
+                # read from the socket
+                try:
+                    data = sock.recv(BUF_SIZE)
+                except ConnectionResetError:
+                    # don't exit if client ends connection,
+                    # just remove the connection from the dict
+                    sock.close()
+                    connections.discard(sock)
+                    continue
+                if not data:
+                    # client may have ended the connection
+                    sock.close()
+                    connections.discard(sock)
+                    continue
+
+                # TODO: handle request from socket
+                
+
+        # handle any issues with sockets
+        for sock in exceptional:
+            if sock == main_sock:
+                # issue with main socket, exit node
+                main_sock.close()
+                exit(-1)
+            else:
+                # issue with a client connection socket,
+                # remove it from the dict
+                try:
+                    sock.close()
+                except:
+                    pass
+                connections.discard(sock)
+    
 
 
 if __name__ == "__main__":
