@@ -12,13 +12,6 @@ ourselves, we trust them to behave correctly. Incoming
 nodes do have the option of identifying other
 nodes in the system to connect to without the use
 of the name server or seed nodes. Listens on a specified port.
-Seed nodes must be specified in a file called SeedNodes.txt
-in the following manner:
-
-seed_node_1_host seed_node_1_port
-seed_node_2_host seed_node_2_port
-...
-
 '''
 
 import sys
