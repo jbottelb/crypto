@@ -22,8 +22,8 @@ class Miner:
         self.block = block
         hash = sha256(str(self.block).encode()).hexdigest()
         while not hash.startswith(self.difficulty * "0"):
-            hash = sha256(str(self.block).encode()).hexdigest()
             self.block.nonce += 1
+            hash = sha256(str(self.block).encode()).hexdigest()
         self.block.hash = hash
         return hash
 
