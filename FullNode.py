@@ -18,36 +18,9 @@ import select
 import json
 from MessageTypes import MessageTypes
 import time
+from Utilities import Utilities
 
 BUF_SIZE = 10000
-
-'''
-Handle the mechanics of sending a request, given a request dict.
-Returns: 1 if successful, 0 otherwise
-'''
-def sendRequest(sock: socket.socket, request: dict) -> int:
-    requestString = json.dumps(request)
-    requestBytes = bytearray(requestString.encode('utf-8'))
-    # attempt to send request
-    try:
-        sock.sendall(requestBytes)
-    except:
-        # error sending request
-        return 0
-    return 1
-
-'''
-Converts response bytes to a python dictionary and returns it
-Returns: None if invalid response, otherwise a dict
-representing the response </returns>
-'''
-def readResponse(data) -> dict or None:
-    try:
-        data = str(data, 'utf-8') # convert to string
-        return json.loads(data)
-    except Exception as e:
-        # improperly formatted response
-        return None
 
 '''
 Sends a request to the name server to get a list of active seed nodes.
@@ -60,7 +33,7 @@ def requestSeedNodes(sock: socket.socket) -> int:
         # Name server is down, Full Node must provide a trusted node to get started
         print("Name Server refused connection. Provide a trusted full node in command line args or try again later.")
         exit(-1)
-    if not sendRequest(sock, {"Type": MessageTypes.Get_Seed_Nodes}):
+    if not Utilities.sendMessage(sock, {"Type": MessageTypes.Get_Seed_Nodes}):
         # issue sending seed nodes request to name server
         print("Error sending request to Name Server. Provide a trusted full node in command line args or try again later.")
         exit(-1)
@@ -163,7 +136,7 @@ def main():
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             requestSeedNodes(sock)
             data = sock.recv(BUF_SIZE)
-            response = readResponse(data)
+            response = Utilities.readMessage(data)
             print(response)
 
 if __name__ == "__main__":

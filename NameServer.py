@@ -12,6 +12,8 @@ ourselves, we trust them to behave correctly. Incoming
 nodes do have the option of identifying other
 nodes in the system to connect to without the use
 of the name server or seed nodes. Listens on a specified port.
+Reads list of seed nodes to ping from a file named 
+"SeedNodesList.txt"
 '''
 
 import sys
