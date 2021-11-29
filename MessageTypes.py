@@ -7,4 +7,5 @@ class MessageTypes(str, Enum):
     Send_Transaction = "Send_Transaction"
     Send_Block = "Send_Block"
     Get_Seed_Nodes_Response = "Get_Seed_Nodes_Response"
+    Get_Neighbors_Response = "Get_Neighbors_Response"
 

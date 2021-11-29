@@ -12,6 +12,8 @@ and receiving different types of messages.
 import socket
 import json
 
+from MessageTypes import MessageTypes
+
 class Utilities:
 
     '''
@@ -31,6 +33,70 @@ class Utilities:
         return 1
 
     '''
+    Checks that the contents of a message are valid depending
+    on the message type.
+    Returns: True if valid, False otherwise
+    '''
+    @staticmethod
+    def isValidMessage(message: dict) -> bool:
+        type = message.get("Type", 0)
+        if not type or type not in MessageTypes._value2member_map_:
+            return False
+
+        if type == MessageTypes.Get_Seed_Nodes:
+            if len(message.keys()) != 1:
+                return False
+            return True
+        elif type == MessageTypes.Get_Neighbors:
+            if len(message.keys() != 1):
+                return False
+            return True
+        elif type == MessageTypes.Get_Blockchain:
+            # TODO:
+            pass
+        elif type == MessageTypes.Send_Transaction:
+            # TODO:
+            pass
+        elif type == MessageTypes.Send_Block:
+            # TODO:
+            pass
+        elif type == MessageTypes.Get_Seed_Nodes_Response:
+            if len(message.keys()) != 2:
+                return False
+            seed_nodes = message.get("Nodes", 0)
+            if not seed_nodes:
+                return False
+            if type(seed_nodes) != list:
+                return False
+            for item in seed_nodes:
+                if type(item) != list or len(item) != 2:
+                    return False
+                if type(item[0]) != str or type(item[1]) != int:
+                    return False
+            return True
+        elif type == MessageTypes.Get_Neighbors_Response:
+            if len(message.keys()) != 2:
+                return False
+            seed_nodes = message.get("Neigbors", 0)
+            if not seed_nodes:
+                return False
+            if type(seed_nodes) != list:
+                return False
+            for item in seed_nodes:
+                if type(item) != list or len(item) != 2:
+                    return False
+                if type(item[0]) != str or type(item[1]) != int:
+                    return False
+            return True
+
+
+        # TODO: check other types
+
+
+
+        return False
+
+    '''
     Converts message bytes to a python dictionary and returns it
     Returns: None if invalid response, otherwise a dict
     representing the message
@@ -39,9 +105,14 @@ class Utilities:
     def readMessage(data) -> dict or None:
         try:
             data = str(data, 'utf-8') # convert to string
-            return json.loads(data)
+            message = json.loads(data)
+            # check that message is a valid message form
+            if Utilities.isValidMessage(message):
+                return message
         except Exception as e:
             # improperly formatted message
-            return None
+            pass
+        return None
+        
 
     
