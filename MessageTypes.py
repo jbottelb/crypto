@@ -8,4 +8,8 @@ class MessageTypes(str, Enum):
     Send_Block = "Send_Block"
     Get_Seed_Nodes_Response = "Get_Seed_Nodes_Response"
     Get_Neighbors_Response = "Get_Neighbors_Response"
+    Get_Miner_Count = "Get_Miner_Count"
+    Join_As_Miner = "Join_As_Miner"
+    Get_Miner_Count_Response = "Get_Miner_Count_Response"
+    Join_As_Miner_Response = "Join_As_Miner_Response"
 

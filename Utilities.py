@@ -89,6 +89,22 @@ class Utilities:
                     return False
             return True
 
+        elif type == MessageTypes.Get_Miner_Count:
+            # TODO:
+            pass
+
+        elif type == MessageTypes.Join_As_Miner:
+            # TODO:
+            pass
+
+        elif type == MessageTypes.Get_Miner_Count_Response:
+            # TODO:
+            pass
+    
+        elif type == MessageTypes.Join_As_Miner_Response:
+            # TODO:
+            pass
+
 
         # TODO: check other types
 
