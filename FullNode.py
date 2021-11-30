@@ -44,18 +44,33 @@ def main():
         except:
             print("Usage: python3 FullNode.py <port> [<trusted_hostname:port>]")
             exit(-1)
+    
+    # stores (hostname, port) pairs of other full nodes in the system
+    neighbors = []
+
+    #TODO: handle having a trusted host to start with (As a full node)
+    if trusted_host is not None:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(5)
+        message = {"Type": MessageTypes.Get_Neighbors}
+        rc = Utilities.sendMessage(sock, message)
+        if rc:
+            # sent message successfully to trusted node
+            response = Utilities.readMessage(sock)
+            if response is not None:
+                neighbors = response.get("")
+
+        # couldn't communicate with trusted node, fallback to seed nodes
+
+        sock.close()
+
 
     # request seed nodes if we have no trusted host to start with
     active_seeds = None
     if trusted_host is None:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        active_seeds = Utilities.getActiveSeedNodes(sock)
+        active_seeds = Utilities.getActiveSeedNodes()
         if active_seeds is not None:
             print(f"Active seeds: {active_seeds}")
-        sock.close()
-    else:
-        # TODO: handle having a trusted host to start with (As a full node)
-        pass
     
     main_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     main_sock.bind(("", port))
@@ -63,7 +78,6 @@ def main():
 
     # dict of socket connections
     connections = {main_sock: f"localhost:{port}"}
-    # neighbors = []
 
     while 1:
         # listen for a second for a readable socket

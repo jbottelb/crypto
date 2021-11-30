@@ -13,3 +13,5 @@ class MessageTypes:
     Join_As_Miner_Response = "Join_As_Miner_Response"
     Start_New_Block = "Start_New_Block"
     Start_New_Block_Response = "Start_New_Block_Response"
+    Get_Blockchain_Response = "Get_Blockchain_Response"
+    Send_Transaction_Response = "Send_Transaction_Response"
