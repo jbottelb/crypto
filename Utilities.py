@@ -207,6 +207,14 @@ class Utilities:
                 if type(item) != dict:
                     return False
             return True
+        
+        elif msgtype == MessageTypes.Send_Transaction_Response:
+            if len(message.keys()) != 2:
+                return False
+            valid = message.get("Valid", None)
+            if valid is None or type(valid) != str:
+                return False
+            return True
 
         # TODO: check other types if more are added
         return False
