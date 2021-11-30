@@ -19,8 +19,7 @@ import json
 from MessageTypes import MessageTypes
 import time
 from Utilities import Utilities
-
-BUF_SIZE = 10000
+from Constants import Constants
 
 '''
 Sends a request to the name server to get a list of active seed nodes.
@@ -70,7 +69,7 @@ def main():
             else:
                 # read from the socket
                 try:
-                    data = sock.recv(BUF_SIZE)
+                    data = sock.recv(Constants.BUF_SIZE)
                 except ConnectionResetError:
                     # don't exit if client ends connection,
                     # just remove the connection from the dict
@@ -135,7 +134,7 @@ def main():
         if time.time() - start_time > 10:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             requestSeedNodes(sock)
-            data = sock.recv(BUF_SIZE)
+            data = sock.recv(Constants.BUF_SIZE)
             response = Utilities.readMessage(data)
             print(response)
 
