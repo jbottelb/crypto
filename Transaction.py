@@ -33,6 +33,9 @@ class Transaction:
 
         return json.dumps(j)
 
+    def __str__(self):
+        return str(to_json(self))
+
 if __name__=="__main__":
     key = RSA.generate(4096)
     public_key = key.publickey().exportKey('PEM')
