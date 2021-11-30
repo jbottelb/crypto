@@ -4,6 +4,7 @@
 Module for nodes in the system.
 Includes functions for keeping track and communicating with other nodes.
 '''
+import random
 
 # transactions per block
 TPB = 5
@@ -24,13 +25,27 @@ class Block:
         self.index = index
         self.prev_hash = prev_hash
         self.miner_pk = pk
-        self.nonce = 0
+        self.nonce = random.randint(0, DIFFICULTY * 100000000)
 
         self.transactions = []
         self.hash = None
 
     def add_transaction(self, transaction):
         self.transactions.append(transaction)
+
+    def to_json(self):
+        '''
+        Converts Block to json string
+        '''
+        j = {}
+        j["index"]        = self.index
+        j["prev_hash"]    = self.prev_hash
+        j["miner_pk"]     = self.miner_pk
+        j["nonce"]        = self.nonce
+        j["transactions"] = self.transactions
+        j["hash"]         = self.hash
+        # stringify
+        return str(j)
 
     def __str__(self):
         block_str = ""
