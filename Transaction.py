@@ -34,7 +34,7 @@ class Transaction:
         return json.dumps(j)
 
     def __str__(self):
-        return str(to_json(self))
+        return str(self.to_json)
 
 if __name__=="__main__":
     key = RSA.generate(4096)
