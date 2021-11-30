@@ -18,6 +18,25 @@ from Constants import Constants
 class Utilities:
 
     '''
+    Checks if a node is alive by sending a ping.
+    Returns: 1 if alive, 0 otherwise
+    '''
+    @staticmethod
+    def pingNode(addr: tuple) -> int:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            # see if node is running
+            sock.connect(addr)
+            # yes, it's running
+            print(f"Successful ping to {addr}")
+            sock.close()
+            return 1
+        except:
+            # no, it's not running
+            sock.close()
+            return 0
+
+    '''
     Checks that the contents of a message are valid depending
     on the message type.
     Returns: True if valid, False otherwise
@@ -360,21 +379,31 @@ class Utilities:
         return returnList
     
     '''
-    Handles the mechanics of sending a message, given a message dict. If a node wants the
-    socket to be kept open, it must provide a connections dict for the socket to be added to.
+    Handles the mechanics of sending a message, given a message dict and either a socket
+    or an address. If a socket is provided, it will be used, regardless of any provided
+    address. Otherwise, a socket will be created for the given address. That socket
+    will either be stored in the connections dict or not, depending on the keepSocketOpen
+    boolean that is provided. If a node wants the socket to be kept open, it must provide 
+    a connections dict for the socket to be added to.
     Returns: 1 if successful, 0 otherwise
     '''
     @staticmethod
-    def sendMessage(addr: tuple, message: dict, keepSocketOpen: bool, connections: dict = None) -> int:
+    def sendMessage(message: dict, keepSocketOpen: bool, addr: tuple = None, 
+                    sock: socket.socket = None, connections: dict = None) -> int:
         if keepSocketOpen and not connections:
             # must provide a connections dict if socket is to be kept open for future use
             return 0
-        msgString = json.dumps(message)
-        msgBytes = bytearray(msgString.encode('utf-8'))
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        newSock = False
+        if sock is None:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            newSock = True
+        if newSock and addr is None:
+            # no address to connect to
+            return 0
         try:
             # try to connect, save socket if required
-            sock.connect(addr)
+            if newSock:
+                sock.connect(addr)
             if keepSocketOpen:
                 connections[sock] = f"{addr[0]}:{addr[1]}"
         except:
@@ -382,6 +411,8 @@ class Utilities:
             return 0
         # attempt to send message
         try:
+            msgString = json.dumps(message)
+            msgBytes = bytearray(msgString.encode('utf-8'))
             sock.sendall(msgBytes)
         except:
             # error sending message
@@ -389,25 +420,8 @@ class Utilities:
         if not keepSocketOpen:
             sock.close()
         return 1
-    
-    '''
-    Attempts to send a response message on an open socket.
-    Closes socket afterwards.
-    Returns: nothing
-    '''
-    def sendResponse(sock: socket.socket, response: dict):
-        responseString = json.dumps(response)
-        responseBytes = bytearray(responseString.encode('utf-8'))
-        # attempt to send message
-        try:
-            sock.sendall(responseBytes)
-        except:
-            # error sending message
-            pass
-        sock.close()
 
     '''
-    sendResponse - take in a socket, send message, close socket
     sendMessage - keepSocketOpen? - Yes - take in addr, take in connections, create socket, add to connections, send message
                                     - No  - take in addr, create socket, send message, close socket (sending messages for which you need no response)
 

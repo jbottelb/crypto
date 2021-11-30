@@ -12,22 +12,11 @@ expected from a full node in our system.
 
 # import Node
 
-from re import A
 import socket
 import sys
 import select
-import json
 from MessageTypes import MessageTypes
-import time
 from Utilities import Utilities
-
-'''
-Handles relevant message types for full nodes. Discards
-irrelevant messages.
-Returns: 1 on successful handling, 0 otherwise
-'''
-def handleMessage(sock: socket.socket, message: dict) -> int:
-    pass
 
 def main():
     if len(sys.argv) < 2 or len(sys.argv) > 3:

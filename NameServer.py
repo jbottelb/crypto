@@ -25,27 +25,38 @@ import json
 
 from MessageTypes import MessageTypes
 from Constants import Constants
+from Utilities import Utilities
 
 active_seeds = set()
 possible_seeds = set()
 
 # returns a string 
-def get_active_seeds_response_json():
-    return json.dumps({"Type": "Get_Seed_Nodes_Response", "Nodes": list(active_seeds)})
+def get_active_seeds_response_dict():
+    return {"Type": "Get_Seed_Nodes_Response", "Nodes": list(active_seeds)}
 
 def ping_seed_nodes():
     for ps in possible_seeds:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            # see if seed node is running
-            sock.connect(ps)
+        if Utilities.pingNode(ps):
             # yes -> add to active seeds
             active_seeds.add(ps)
-            print(f"Successful ping to {ps}")
-            sock.close()
-        except:
+        else:
             # no -> remove from active seeds
-            active_seeds.discard(ps)  
+            active_seeds.discard(ps)            
+
+'''
+Handle messages that request a list of seed nodes. Ignore other message types.
+Returns: nothing
+'''
+def handleMessage(sock: socket.socket, message: dict, connections: dict):
+    if message.get("Type", 0) == MessageTypes.Get_Seed_Nodes:
+        # appropriate request, return list of seed nodes
+        responsedict = get_active_seeds_response_dict()
+        Utilities.sendResponse(sock, message, connections)
+    else:
+        # improperly formatted request for seed node addresses
+        sock.close()
+        del connections[sock]
+        continue
 
 '''
 Send our name server's information to catalog.cse.nd.edu.
@@ -122,45 +133,12 @@ def main():
             else:
                 # read from the socket
                 print(f"New request from : {connections[sock]}")
-                try:
-                    data = sock.recv(Constants.BUF_SIZE)
-                except ConnectionResetError:
-                    # don't exit if client ends connection,
-                    # just remove the connection from the dict
-                    print("ConnectionResetError")
-                    sock.close()
-                    del connections[sock]
+                message = Utilities.readMessage(sock, connections)
+                if message is None:
                     continue
-                if not data:
-                    # client may have ended the connection
-                    sock.close()
-                    del connections[sock]
-                    continue
-
-                # TODO: handle request from socket
-                try:
-                    data = str(data, 'utf-8')
-                    request = json.loads(data)
-                except Exception as e:
-                    # improperly formatted request for seed node addresses
-                    print("Improper Request Format")
-                    sock.close()
-                    del connections[sock]
-                    continue
-                print(f"Handling request from {connections[sock]}...")
-                if request.get("Type", 0) == MessageTypes.Get_Seed_Nodes:
-                    # appropriate request, return list of seed nodes
-                    responseString = get_active_seeds_response_json()
-                    responseBytes = bytearray(responseString.encode('utf-8'))
-                    sock.sendall(responseBytes)
-                    # clean up connection immediately
-                    sock.close()
-                    del connections[sock]
                 else:
-                    # improperly formatted request for seed node addresses
-                    sock.close()
-                    del connections[sock]
-                    continue
+                    print(f"Handling request from {connections[sock]}...")
+                    handleMessage(message)
 
         # handle any issues with sockets
         for sock in exceptional:
