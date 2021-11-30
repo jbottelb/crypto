@@ -1,6 +1,5 @@
-from enum import Enum
 
-class MessageTypes(str, Enum):
+class MessageTypes:
     Get_Seed_Nodes = "Get_Seed_Nodes"
     Get_Neighbors = "Get_Neighbors"
     Get_Blockchain = "Get_Blockchain"

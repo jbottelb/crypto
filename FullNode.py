@@ -12,6 +12,7 @@ expected from a full node in our system.
 
 # import Node
 
+from re import A
 import socket
 import sys
 import select
@@ -19,7 +20,14 @@ import json
 from MessageTypes import MessageTypes
 import time
 from Utilities import Utilities
-from Constants import Constants
+
+'''
+Handles relevant message types for full nodes. Discards
+irrelevant messages.
+Returns: 1 on successful handling, 0 otherwise
+'''
+def handleMessage(sock: socket.socket, message: dict) -> int:
+    pass
 
 def main():
     if len(sys.argv) < 2 or len(sys.argv) > 3:
@@ -27,13 +35,32 @@ def main():
         exit(-1)
     
     port = int(sys.argv[1])
+    trusted_host = None
+    if len(sys.argv) == 3:
+        trusted_host = sys.argv[2]
+        try:
+            trusted_host = trusted_host.split(":")
+            trusted_host = (trusted_host[0], int(trusted_host[1]))
+        except:
+            print("Usage: python3 FullNode.py <port> [<trusted_hostname:port>]")
+            exit(-1)
 
-    start_time = time.time()
+    # request seed nodes if we have no trusted host to start with
+    active_seeds = None
+    if trusted_host is None:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        active_seeds = Utilities.getActiveSeedNodes(sock)
+        if active_seeds is not None:
+            print(f"Active seeds: {active_seeds}")
+        sock.close()
+    else:
+        # TODO: handle having a trusted host to start with (As a full node)
+        pass
     
     main_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     main_sock.bind(("", port))
     main_sock.listen()
-    
+
     # dict of socket connections
     connections = {main_sock: f"localhost:{port}"}
     # neighbors = []
@@ -52,44 +79,9 @@ def main():
             # a connection
             else:
                 # read from the socket
-                try:
-                    data = sock.recv(Constants.BUF_SIZE)
-                except ConnectionResetError:
-                    # don't exit if client ends connection,
-                    # just remove the connection from the dict
-                    sock.close()
-                    del connections[sock]
-                    continue
-                if not data:
-                    # client may have ended the connection
-                    sock.close()
-                    del connections[sock]
-                    continue
-
-                # TODO: handle request from socket
-                try:
-                    data = str(data, 'utf-8')
-                    request = json.loads(data)
-                except Exception as e:
-                    # improperly formatted request
-                    sock.close()
-                    del connections[sock]
-                    continue
-                print(f"Handling message from {connections[sock]}...")
-                if request.get("Type", 0) == MessageTypes.Get_Seed_Nodes_Response:
-                    response = request.get("Nodes", 0)
-                    if response == 0:
-                        print("No Seed Nodes Returned by Name Server. Provide a trusted full node in command line args or try again later.")
-                        exit(-1)
-                    print(response)
-                    sock.close()
-                    del connections[sock]
-                else:
-                    # improperly formatted request for seed node addresses
-                    sock.close()
-                    del connections[sock]
-                    continue
-
+                message = Utilities.readMessage(sock, connections)
+                if message is not None:
+                    handleMessage(message)
         # handle any issues with sockets
         for sock in exceptional:
             if sock == main_sock:
@@ -113,14 +105,6 @@ def main():
                 except:
                     pass
                 del connections[sock]
-        
-        # request seed nodes
-        if time.time() - start_time > 10:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            requestSeedNodes(sock)
-            data = sock.recv(Constants.BUF_SIZE)
-            response = Utilities.readMessage(data)
-            print(response)
 
 if __name__ == "__main__":
     main()

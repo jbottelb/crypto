@@ -11,7 +11,7 @@ and receiving different types of messages.
 
 import socket
 import json
-import http
+import http.client
 from MessageTypes import MessageTypes
 from Constants import Constants
 
@@ -40,22 +40,22 @@ class Utilities:
     '''
     @staticmethod
     def _isValidMessage(message: dict) -> bool:
-        type = message.get("Type", 0)
-        if not type or type not in MessageTypes._value2member_map_:
+        msgtype = message.get("Type", 0)
+        if not msgtype or msgtype not in [MessageTypes.__dict__[key] for key in MessageTypes.__dict__.keys() if not key.startswith("__")]:
             return False
 
-        if type == MessageTypes.Get_Seed_Nodes:
+        if msgtype == MessageTypes.Get_Seed_Nodes:
             if len(message.keys()) != 1:
                 return False
             return True
-        elif type == MessageTypes.Get_Neighbors:
+        elif msgtype == MessageTypes.Get_Neighbors:
             if len(message.keys() != 1):
                 return False
             return True
-        elif type == MessageTypes.Get_Blockchain:
+        elif msgtype == MessageTypes.Get_Blockchain:
             # TODO:
             pass
-        elif type == MessageTypes.Send_Transaction:
+        elif msgtype == MessageTypes.Send_Transaction:
             if len(message.keys()) != 6:
                 return False
             tid = message.get("Transaction_ID", 0)
@@ -74,10 +74,10 @@ class Utilities:
             if not signature or type(signature) != str:
                 return False
             return True
-        elif type == MessageTypes.Send_Block:
+        elif msgtype == MessageTypes.Send_Block:
             # TODO:
             pass
-        elif type == MessageTypes.Get_Seed_Nodes_Response:
+        elif msgtype == MessageTypes.Get_Seed_Nodes_Response:
             if len(message.keys()) != 2:
                 return False
             seed_nodes = message.get("Nodes", 0)
@@ -91,7 +91,7 @@ class Utilities:
                 if type(item[0]) != str or type(item[1]) != int:
                     return False
             return True
-        elif type == MessageTypes.Get_Neighbors_Response:
+        elif msgtype == MessageTypes.Get_Neighbors_Response:
             if len(message.keys()) != 2:
                 return False
             seed_nodes = message.get("Neigbors", 0)
@@ -106,12 +106,12 @@ class Utilities:
                     return False
             return True
 
-        elif type == MessageTypes.Get_Miner_Count:
+        elif msgtype == MessageTypes.Get_Miner_Count:
             if len(message.keys()) != 1:
                 return False
             return True
 
-        elif type == MessageTypes.Join_As_Miner:
+        elif msgtype == MessageTypes.Join_As_Miner:
             if len(message.keys()) != 2:
                 return False
             searching_for_owner = message.get("Searching_For_Owner", -1)
@@ -121,7 +121,7 @@ class Utilities:
                 return False
             return True 
 
-        elif type == MessageTypes.Get_Miner_Count_Response:
+        elif msgtype == MessageTypes.Get_Miner_Count_Response:
             if len(message.keys()) != 2:
                 return False
             count = message.get("Count", -1)
@@ -131,7 +131,7 @@ class Utilities:
                 return False
             return True
     
-        elif type == MessageTypes.Join_As_Miner_Response:
+        elif msgtype == MessageTypes.Join_As_Miner_Response:
             if len(message.keys()) != 2:
                 return False
             full_node_to_try = message.get("Full_Node_To_Try", 0)
@@ -143,7 +143,7 @@ class Utilities:
                 return False
             return True
 
-        elif type == MessageTypes.Start_New_Block:
+        elif msgtype == MessageTypes.Start_New_Block:
             if len(message.keys()) != 4:
                 return False
             transactions = message.get("Transactions", 0)
@@ -160,7 +160,7 @@ class Utilities:
                 return False
             return True
 
-        elif type == MessageTypes.Start_New_Block_Response:
+        elif msgtype == MessageTypes.Start_New_Block_Response:
             if len(message.keys()) != 1:
                 return False
             return True
@@ -201,15 +201,19 @@ class Utilities:
             if connections is not None:
                 del connections[sock]
             return None
-        print(f"Handling message from {connections[sock]}...")
+        if connections is not None:
+            print(f"Handling message from {connections[sock]}...")
         try:
             data = str(data, 'utf-8') # convert to string
             message = json.loads(data)
             # check that message is a valid message form
+            print(f"Message to be validated: {message}")
             if Utilities._isValidMessage(message):
+                print("message is valid")
                 return message
         except:
             # improperly formatted message
+            print("message is not valid")
             pass
         return None
 
@@ -220,15 +224,17 @@ class Utilities:
     '''
     @staticmethod
     def _connectToNameServer(sock: socket.socket) -> bool:
-        # don't use try/except; we want this to raise an exception
-        # if it fails
-        catalog_conn = http.client.HTTPConnection(Constants.CATALOG_ENDPOINT, int(Constants.CATALOG_PORT))
-        catalog_conn.request("GET", "/query.json")
-        result = catalog_conn.getresponse()
-        data = result.read()
-        data = data.decode('utf-8')
-        services = json.loads(data)
-        catalog_conn.close()
+        try:
+            catalog_conn = http.client.HTTPConnection(Constants.CATALOG_ENDPOINT, Constants.CATALOG_PORT)
+            catalog_conn.request("GET", "/query.json")
+            result = catalog_conn.getresponse()
+            data = result.read()
+            data = data.decode('utf-8')
+            services = json.loads(data)
+            catalog_conn.close()
+        except:
+            # issue making connection to catalog server
+            return False
 
         connection_made = False
         for service in services:
@@ -237,6 +243,7 @@ class Utilities:
                     host = service.get('name', '')
                     port = service.get('port', '')
                     try:
+                        # attempt connection to name server
                         sock.connect((host, port))
                         connection_made = True
                     except:
@@ -248,6 +255,7 @@ class Utilities:
     
     '''
     Sends a request to the name server to get a list of active seed nodes.
+    Takes in a socket with which to send the request and listen for the response.
     Returns: active seed nodes if successful, None otherwise
     '''
     @staticmethod
@@ -266,7 +274,7 @@ class Utilities:
         # wait for response from name server (until timeout)
         sock.settimeout(5)
         response = Utilities.readMessage(sock)
-        if response != None:
+        if response is not None:
             if response.get("Type", 0) == MessageTypes.Get_Seed_Nodes_Response:
                 return response.get("Nodes", None)
         return None

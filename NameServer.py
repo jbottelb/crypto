@@ -31,7 +31,7 @@ possible_seeds = set()
 
 # returns a string 
 def get_active_seeds_response_json():
-    return json.dumps({"Type": "Get_Seed_Nodes_Response", "Active Seeds": list(active_seeds)})
+    return json.dumps({"Type": "Get_Seed_Nodes_Response", "Nodes": list(active_seeds)})
 
 def ping_seed_nodes():
     for ps in possible_seeds:
@@ -60,7 +60,7 @@ def updateCatalog(port: int, project_name: str) -> None:
         "project": project_name
     }
     body = json.dumps(body)
-    sock.sendto(bytes(body, "utf-8"), (Constants.CATALOG_ENDPOINT, int(Constants.CATALOG_PORT)))     
+    sock.sendto(bytes(body, "utf-8"), (Constants.CATALOG_ENDPOINT, Constants.CATALOG_PORT))
             
 
 def main():
@@ -102,7 +102,7 @@ def main():
             latest_ping = time.time() 
 
         # update catalog server at a predetermined interval
-        if int(time.time() - latest_catalog_update) > int(Constants.CATALOG_UPDATE_INTERVAL) or first_catalog_update:
+        if int(time.time() - latest_catalog_update) > Constants.CATALOG_UPDATE_INTERVAL or first_catalog_update:
             print(f"Sending keep-alive at {time.time()}")
             updateCatalog(name_server_port, Constants.PROJECT_NAME)
             first_catalog_update = False
