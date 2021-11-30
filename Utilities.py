@@ -180,19 +180,21 @@ class Utilities:
     representing the message
     '''
     @staticmethod
-    def readMessage(sock: socket.socket, connections: dict) -> dict or None:
+    def readMessage(sock: socket.socket, connections: dict = None) -> dict or None:
         try:
             data = sock.recv(Constants.BUF_SIZE)
         except ConnectionResetError:
             # don't exit if client ends connection,
             # just remove the connection from the dict
             sock.close()
-            del connections[sock]
+            if type(connections) == dict:
+                del connections[sock]
             return None
         if not data:
             # client may have ended the connection
             sock.close()
-            del connections[sock]
+            if type(connections) == dict:
+                del connections[sock]
             return None
         print(f"Handling message from {connections[sock]}...")
         try:
