@@ -26,6 +26,7 @@ def main():
     port = int(sys.argv[1])
     trusted_host = None
     if len(sys.argv) == 3:
+        # read in and store trusted host
         trusted_host = sys.argv[2]
         try:
             trusted_host = trusted_host.split(":")
@@ -35,31 +36,45 @@ def main():
             exit(-1)
     
     # stores (hostname, port) pairs of other full nodes in the system
-    neighbors = []
+    neighbors = set()
 
     #TODO: handle having a trusted host to start with (As a full node)
     if trusted_host is not None:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(5)
-        message = {"Type": MessageTypes.Get_Neighbors}
-        rc = Utilities.sendMessage(sock, message)
-        if rc:
-            # sent message successfully to trusted node
-            response = Utilities.readMessage(sock)
-            if response is not None:
-                neighbors = response.get("")
-
-        # couldn't communicate with trusted node, fallback to seed nodes
-
-        sock.close()
-
-
-    # request seed nodes if we have no trusted host to start with
-    active_seeds = None
-    if trusted_host is None:
+        new_neighbors = Utilities.getNeighbors(trusted_host)
+        if new_neighbors is not None:
+            neighbors = set([tuple(node) for node in new_neighbors])
+            neighbors.add(trusted_host)
+        # fallback to seed nodes if needed
+        elif new_neighbors is None or len(neighbors) == 1:
+            active_seeds = Utilities.getActiveSeedNodes()
+            if active_seeds is not None:
+                for node in active_seeds:
+                    neighbors.add(tuple(node))
+                # also get neighbors of the seed nodes
+                for node in active_seeds:
+                    new_neighbors = Utilities.getNeighbors(node)
+                    if new_neighbors is not None:
+                        for nn in new_neighbors:
+                            neighbors.add(tuple(nn))
+    else:
+        # request seed nodes if we have no trusted host to start with
+        active_seeds = None
         active_seeds = Utilities.getActiveSeedNodes()
         if active_seeds is not None:
-            print(f"Active seeds: {active_seeds}")
+            neighbors = set([tuple(node) for node in active_seeds])
+            # also get neighbors of the seed nodes
+            for node in active_seeds:
+                new_neighbors = Utilities.getNeighbors(node)
+                if new_neighbors is not None:
+                    for nn in new_neighbors:
+                        neighbors.add(tuple(nn))
+
+    # handle case where we found no neighbors
+    if len(neighbors) == 0:
+        print("No active full nodes discovered")
+        exit(-1)
+
+    print(neighbors)
     
     main_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     main_sock.bind(("", port))
