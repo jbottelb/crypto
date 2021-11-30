@@ -45,7 +45,22 @@ def ping_seed_nodes():
             sock.close()
         except:
             # no -> remove from active seeds
-            active_seeds.discard(ps)       
+            active_seeds.discard(ps)  
+
+'''
+Send our name server's information to catalog.cse.nd.edu.
+Returns: nothing
+'''
+def updateCatalog(port: int, project_name: str) -> None:
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    body = {
+        "type": "nameserver",
+        "owner": "bbudden",
+        "port": port,
+        "project": project_name
+    }
+    body = json.dumps(body)
+    sock.sendto(bytes(body, "utf-8"), (Constants.CATALOG_ENDPOINT, int(Constants.CATALOG_PORT)))     
             
 
 def main():
@@ -76,12 +91,22 @@ def main():
     connections = {main_sock: f"localhost:{name_server_port}"}
     first_ping = True
     latest_ping = time.time()
+    first_catalog_update = True
+    latest_catalog_update = time.time()
 
     while 1:
+        # ping seed nodes at the specified interval to determine which are active
         if int(time.time() - latest_ping) > int(ping_interval) or first_ping:
             ping_seed_nodes()
             first_ping = False
-            latest_ping = time.time()  
+            latest_ping = time.time() 
+
+        # update catalog server at a predetermined interval
+        if int(time.time() - latest_catalog_update) > int(Constants.CATALOG_UPDATE_INTERVAL) or first_catalog_update:
+            print(f"Sending keep-alive at {time.time()}")
+            updateCatalog(name_server_port, Constants.PROJECT_NAME)
+            first_catalog_update = False
+            latest_catalog_update = time.time()
               
         # listen for a second for a readable socket
         readable, writeable, exceptional = select.select(connections.keys(), [], [], 1)

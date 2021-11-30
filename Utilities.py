@@ -11,6 +11,7 @@ and receiving different types of messages.
 
 import socket
 import json
+import http
 from MessageTypes import MessageTypes
 from Constants import Constants
 
@@ -187,13 +188,17 @@ class Utilities:
             # don't exit if client ends connection,
             # just remove the connection from the dict
             sock.close()
-            if type(connections) == dict:
+            if connections is not None:
                 del connections[sock]
+            return None
+        except socket.timeout:
+            # in cases where a socket has a timeout set, return None
+            # when we hit that timeout
             return None
         if not data:
             # client may have ended the connection
             sock.close()
-            if type(connections) == dict:
+            if connections is not None:
                 del connections[sock]
             return None
         print(f"Handling message from {connections[sock]}...")
@@ -206,6 +211,64 @@ class Utilities:
         except:
             # improperly formatted message
             pass
+        return None
+
+    '''
+    Tries to connect to the server by looking up the service with 
+    the specified project_name in catalog.cse.nd.edu.
+    Returns: boolean representing whether a connection was made
+    '''
+    @staticmethod
+    def _connectToNameServer(sock: socket.socket) -> bool:
+        # don't use try/except; we want this to raise an exception
+        # if it fails
+        catalog_conn = http.client.HTTPConnection(Constants.CATALOG_ENDPOINT, int(Constants.CATALOG_PORT))
+        catalog_conn.request("GET", "/query.json")
+        result = catalog_conn.getresponse()
+        data = result.read()
+        data = data.decode('utf-8')
+        services = json.loads(data)
+        catalog_conn.close()
+
+        connection_made = False
+        for service in services:
+            if service.get('type', '') == 'nameserver':
+                if service.get('project', '') == Constants.PROJECT_NAME:
+                    host = service.get('name', '')
+                    port = service.get('port', '')
+                    try:
+                        sock.connect((host, port))
+                        connection_made = True
+                    except:
+                        # Connection Error, try another service
+                        # (perhaps we restarted our server on another port)
+                        continue
+                    return connection_made
+        return connection_made
+    
+    '''
+    Sends a request to the name server to get a list of active seed nodes.
+    Returns: active seed nodes if successful, None otherwise
+    '''
+    @staticmethod
+    def getActiveSeedNodes(sock: socket.socket) -> list or None:
+        try:
+            if not Utilities._connectToNameServer(sock):
+                # Name server is down, Full Node must wait/retry or provide a trusted node to get started
+                return None
+        except ConnectionRefusedError:
+            # Name server is down, Full Node must wait/retry or provide a trusted node to get started
+            return None
+        # send request for seed nodes to the name server
+        if not Utilities.sendMessage(sock, {"Type": MessageTypes.Get_Seed_Nodes}):
+            # issue sending seed nodes request to name server
+            return None
+        # wait for response from name server (until timeout)
+        sock.settimeout(5)
+        response = Utilities.readMessage(sock)
+        if response != None:
+            if response.get("Type", 0) == MessageTypes.Get_Seed_Nodes_Response:
+                return response.get("Nodes", None)
         return None
         
 

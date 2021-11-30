@@ -21,22 +21,6 @@ import time
 from Utilities import Utilities
 from Constants import Constants
 
-'''
-Sends a request to the name server to get a list of active seed nodes.
-Returns: 1 if successful, 0 otherwise 
-'''
-def requestSeedNodes(sock: socket.socket) -> int:
-    try:
-        sock.connect(("student10.cse.nd.edu", 12000))
-    except ConnectionRefusedError:
-        # Name server is down, Full Node must provide a trusted node to get started
-        print("Name Server refused connection. Provide a trusted full node in command line args or try again later.")
-        exit(-1)
-    if not Utilities.sendMessage(sock, {"Type": MessageTypes.Get_Seed_Nodes}):
-        # issue sending seed nodes request to name server
-        print("Error sending request to Name Server. Provide a trusted full node in command line args or try again later.")
-        exit(-1)
-
 def main():
     if len(sys.argv) < 2 or len(sys.argv) > 3:
         print("Usage: python3 FullNode.py <port> [<trusted_hostname:port>]")
