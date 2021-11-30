@@ -11,9 +11,8 @@ and receiving different types of messages.
 
 import socket
 import json
-from types import prepare_class
-
 from MessageTypes import MessageTypes
+from Constants import Constants
 
 class Utilities:
 
@@ -172,19 +171,37 @@ class Utilities:
         return False
 
     '''
-    Converts message bytes to a python dictionary and returns it
-    Returns: None if invalid response, otherwise a dict
+    Attempts to read from the provided socket. Handles socket issues
+    and invalid message formats. Will close sockets with issues and
+    remove them from the provided connections dictionary. Converts 
+    message bytes to a python dictionary and returns it, otherwise indicates
+    an error. 
+    Returns: None if invalid message or socket issue, otherwise a dict
     representing the message
     '''
     @staticmethod
-    def readMessage(data) -> dict or None:
+    def readMessage(sock: socket.socket, connections: dict) -> dict or None:
+        try:
+            data = sock.recv(Constants.BUF_SIZE)
+        except ConnectionResetError:
+            # don't exit if client ends connection,
+            # just remove the connection from the dict
+            sock.close()
+            del connections[sock]
+            return None
+        if not data:
+            # client may have ended the connection
+            sock.close()
+            del connections[sock]
+            return None
+        print(f"Handling message from {connections[sock]}...")
         try:
             data = str(data, 'utf-8') # convert to string
             message = json.loads(data)
             # check that message is a valid message form
             if Utilities._isValidMessage(message):
                 return message
-        except Exception as e:
+        except:
             # improperly formatted message
             pass
         return None
