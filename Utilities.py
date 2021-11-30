@@ -337,13 +337,14 @@ class Utilities:
             sock.close()
             return None
         # send request for seed nodes to the name server
-        if not Utilities.sendMessage(sock, {"Type": MessageTypes.Get_Seed_Nodes}):
+        if not Utilities.sendMessage({"Type": MessageTypes.Get_Seed_Nodes}, True, sock=sock):
             # issue sending seed nodes request to name server
             sock.close()
             return None
         # wait for response from name server (until timeout)
         sock.settimeout(5)
         response = Utilities.readMessage(sock)
+        print("got response from name server")
         if response is not None:
             if response.get("Type", 0) == MessageTypes.Get_Seed_Nodes_Response:
                 sock.close()
@@ -368,7 +369,7 @@ class Utilities:
         except:
             # issue connecting to desired full node
             return None
-        rc = Utilities.sendMessage(sock, message)
+        rc = Utilities.sendMessage(message, True, sock=sock)
         if rc:
             # sent message successfully to trusted node,
             # read response
@@ -383,15 +384,15 @@ class Utilities:
     or an address. If a socket is provided, it will be used, regardless of any provided
     address. Otherwise, a socket will be created for the given address. That socket
     will either be stored in the connections dict or not, depending on the keepSocketOpen
-    boolean that is provided. If a node wants the socket to be kept open, it must provide 
+    boolean that is provided. If a node wants a new socket to be kept open, it must provide 
     a connections dict for the socket to be added to.
     Returns: 1 if successful, 0 otherwise
     '''
     @staticmethod
     def sendMessage(message: dict, keepSocketOpen: bool, addr: tuple = None, 
                     sock: socket.socket = None, connections: dict = None) -> int:
-        if keepSocketOpen and not connections:
-            # must provide a connections dict if socket is to be kept open for future use
+        if keepSocketOpen and not socket and not connections:
+            # must provide a connections dict if a new socket is to be kept open for future use
             return 0
         newSock = False
         if sock is None:
@@ -404,7 +405,7 @@ class Utilities:
             # try to connect, save socket if required
             if newSock:
                 sock.connect(addr)
-            if keepSocketOpen:
+            if keepSocketOpen and newSock:
                 connections[sock] = f"{addr[0]}:{addr[1]}"
         except:
             # issue connecting to address or saving socket
@@ -419,6 +420,8 @@ class Utilities:
             return 0
         if not keepSocketOpen:
             sock.close()
+            if connections is not None:
+                del connections[sock]
         return 1
 
     '''

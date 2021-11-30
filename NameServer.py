@@ -45,18 +45,18 @@ def ping_seed_nodes():
 
 '''
 Handle messages that request a list of seed nodes. Ignore other message types.
+Removes sockets after handling the message.
 Returns: nothing
 '''
 def handleMessage(sock: socket.socket, message: dict, connections: dict):
     if message.get("Type", 0) == MessageTypes.Get_Seed_Nodes:
         # appropriate request, return list of seed nodes
         responsedict = get_active_seeds_response_dict()
-        Utilities.sendResponse(sock, message, connections)
+        rc = Utilities.sendMessage(responsedict, False, sock=sock, connections=connections)
     else:
         # improperly formatted request for seed node addresses
         sock.close()
         del connections[sock]
-        continue
 
 '''
 Send our name server's information to catalog.cse.nd.edu.
@@ -138,7 +138,7 @@ def main():
                     continue
                 else:
                     print(f"Handling request from {connections[sock]}...")
-                    handleMessage(message)
+                    handleMessage(sock, message, connections)
 
         # handle any issues with sockets
         for sock in exceptional:
