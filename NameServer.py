@@ -24,11 +24,10 @@ import re
 import json
 
 from MessageTypes import MessageTypes
-BUF_SIZE = 10000
+from Constants import Constants
 
 active_seeds = set()
 possible_seeds = set()
-#[("student11.cse.nd.edu", 12001), ("student12.cse.nd.edu", 12000)]
 
 # returns a string 
 def get_active_seeds_response_json():
@@ -99,7 +98,7 @@ def main():
                 # read from the socket
                 print(f"New request from : {connections[sock]}")
                 try:
-                    data = sock.recv(BUF_SIZE)
+                    data = sock.recv(Constants.BUF_SIZE)
                 except ConnectionResetError:
                     # don't exit if client ends connection,
                     # just remove the connection from the dict

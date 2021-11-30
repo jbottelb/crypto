@@ -12,4 +12,5 @@ class MessageTypes(str, Enum):
     Join_As_Miner = "Join_As_Miner"
     Get_Miner_Count_Response = "Get_Miner_Count_Response"
     Join_As_Miner_Response = "Join_As_Miner_Response"
-
+    Start_New_Block = "Start_New_Block"
+    Start_New_Block_Response = "Start_New_Block_Response"
