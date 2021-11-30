@@ -5,6 +5,7 @@ Module for nodes in the system.
 Includes functions for keeping track and communicating with other nodes.
 '''
 import random
+import json
 
 # transactions per block
 TPB = 5
@@ -45,7 +46,7 @@ class Block:
         j["transactions"] = self.transactions
         j["hash"]         = self.hash
         # stringify
-        return str(j)
+        return json.dumps(j)
 
     def __str__(self):
         block_str = ""
