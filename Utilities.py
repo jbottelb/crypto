@@ -142,40 +142,16 @@ class Utilities:
                     return False
             return True
 
-        elif msgtype == MessageTypes.Get_Miner_Count:
+        elif msgtype == MessageTypes.Join_As_Miner:
             if len(message.keys()) != 1:
                 return False
-            return True
-
-        elif msgtype == MessageTypes.Join_As_Miner:
-            if len(message.keys()) != 2:
-                return False
-            searching_for_owner = message.get("Searching_For_Owner", -1)
-            if searching_for_owner == -1:
-                return False
-            if type(searching_for_owner) != str:
-                return False
             return True 
-
-        elif msgtype == MessageTypes.Get_Miner_Count_Response:
-            if len(message.keys()) != 2:
-                return False
-            count = message.get("Count", -1)
-            if count == -1:
-                return False
-            if type(count) != int or count < 0:
-                return False
-            return True
     
         elif msgtype == MessageTypes.Join_As_Miner_Response:
             if len(message.keys()) != 2:
                 return False
-            full_node_to_try = message.get("Full_Node_To_Try", 0)
-            if not full_node_to_try or type(full_node_to_try) != list:
-                return False
-            if len(full_node_to_try) != 2:
-                return False
-            if type(full_node_to_try[0]) != str or type(full_node_to_try[1]) != int:
+            decision = message.get("Decision", 0)
+            if not decision or type(decision) != str:
                 return False
             return True
 

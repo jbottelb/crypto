@@ -8,15 +8,45 @@ behavior consistent with the protocols
 expected from a full node in our system.
 '''
 
-# TODO: implement connection to either name server or trusted_hostname:port
-
-# import Node
-
 import socket
 import sys
 import select
 from MessageTypes import MessageTypes
 from Utilities import Utilities
+import BlockChain
+
+'''
+Handles behavior for different message types that a full node
+expects to receive. Ignores messages that are irrelevant to
+full nodes.
+Returns: nothing
+'''
+def handleMessage(sock: socket.socket, message: dict, neighbors: set, miners: set, connections: dict):
+    msgtype = message.get("Type", 0)
+    if not msgtype:
+        return
+    if msgtype == MessageTypes.Get_Neighbors:
+        response = {"Type": MessageTypes.Get_Neighbors_Response, "Neighbors": neighbors}
+        # send our neighbors to the full node that is requesting them
+        Utilities.sendMessage(response, False, sock=sock, connections=connections)
+    elif msgtype == MessageTypes.Get_Neighbors_Response:
+        for neigh in message.get("Neighbors", []):
+            neighbors.add(tuple(neigh))
+    elif msgtype == MessageTypes.Join_As_Miner:
+        # Other implementations of full nodes could check if this miner
+        # belongs to some list of miner processes that it wants to trust/use.
+        # We will default to accepting new miners that want to work for us.
+        response = {"Type": MessageTypes.Join_As_Miner_Response, "Decision": "Yes"}
+        # send decision to miner so it knows we accepted it and will send
+        # tasks its way soon
+        Utilities.
+
+
+
+    # TODO: Implement handling of other messages that a full node should expect.
+    #       Right now, we are only handling messages needed to talk with miners.
+
+
 
 def main():
     if len(sys.argv) < 2 or len(sys.argv) > 3:
@@ -37,8 +67,14 @@ def main():
     
     # stores (hostname, port) pairs of other full nodes in the system
     neighbors = set()
+    # stores (hostname, port) paris of miners that are working for it
+    miners = set()
+    # set of pending transactions (i.e., not yet added to blockchain)
+    pending_transactions = set()
+    # personal copy of longest blockchain
+    blockchain = BlockChain.BlockChain()
 
-    #TODO: handle having a trusted host to start with (As a full node)
+    # handle having a trusted host to start with (As a full node)
     if trusted_host is not None:
         new_neighbors = Utilities.getNeighbors(trusted_host)
         if new_neighbors is not None:
@@ -83,6 +119,9 @@ def main():
     # dict of socket connections
     connections = {main_sock: f"localhost:{port}"}
 
+    # last time we pinged neighbors
+
+
     while 1:
         # listen for a second for a readable socket
         readable, writeable, exceptional = select.select(connections.keys(), [], [], 1)
@@ -92,6 +131,8 @@ def main():
             if sock == main_sock:
                 conn, addr = sock.accept()
                 connections[conn] = f"{addr[0]}:{addr[1]}"
+                # add never before seen nodes to neighbors
+                neighbors.add(addr)
                 print(f"Received ping from : {addr}")
             # otherwise, we have another node making a request or closing
             # a connection
@@ -99,7 +140,7 @@ def main():
                 # read from the socket
                 message = Utilities.readMessage(sock, connections)
                 if message is not None:
-                    handleMessage(message)
+                    handleMessage(sock, message, neighbors, miners, connections)
         # handle any issues with sockets
         for sock in exceptional:
             if sock == main_sock:
