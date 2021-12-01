@@ -9,6 +9,7 @@ from Utilities import Utilities
 import select
 import sys
 import socket
+from MessageTypes import MessageTypes
 
 N = 1000
 
@@ -21,18 +22,16 @@ class Miner:
 
     # this is here for testing purposes
     def override_difficulty(self, d):
-        self.difficulty = d
-
-    def connect_to_node(self, URL):
-        '''
-        Returns node to mine for
-        '''
-        Utilities.sendMessage()
-
-        pass
+        self.difficulty = d   
 
     def run(self, URL):
-        parent = self.connect_to_node(URL)
+        parent = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            parent.connect(URL)
+        except:
+            print("Failed to connect to specified full node")
+            parent.close()
+            exit(-1)
         block = None
         hash = None
         mining = False
@@ -42,16 +41,26 @@ class Miner:
             # if so, deal with it
             if readable:
                 res = Utilities.readMessage(parent)
+                if res is None or res.get("Type", '') != MessageTypes.Send_Block:
+                    continue
                 try:
-                    block = Block(res["index"], res["prev_hash"], res["pk"])
-                    for t in res["transactions"]:
+                    transactions = res.get("Transactions", [])
+                    previous_hash = res.get("Prev_Hash", '')
+                    block_index = res.get("Block_Index", -1)
+                    block = Block(block_index, previous_hash, '')
+                    for t in transactions:
                         block.add_transaction(t)
                 except Exception as e:
                     print(e)
                     block = None
             elif hash:
                 # send back block
-                Utilities.sendMessage(dict(self.block), True, None, parent)
+                message = {"Type": "Send_Block", "Block_Index": block.index, "Prev_Hash": block.prev_hash,
+                            "Nonce": block.nonce, "Hash": block.hash, "Transactions": block.transactions,
+                            "Previous_Message_Recipients": []}
+                Utilities.sendMessage(message, True, None, parent)
+                mining = False
+                block = None
 
             # if we recieved a block from the full node
             if block:
@@ -67,7 +76,7 @@ class Miner:
 
             # if we are mining, mine for a bit
             if mining and block:
-                hash = self.mine(block, N)
+                hash = self.mine(N)
 
     def mine(self, iterations=None):
         '''
