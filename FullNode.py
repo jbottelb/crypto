@@ -16,7 +16,10 @@ from Utilities import Utilities
 import BlockChain
 import time
 
+### TODO: TESTING ######
 START_TIME = 0
+transactions = ["This is transaction 1 data", "This is transaction 2 data", "This is transaction 3 data"]
+#####################33
 
 '''
 Handles behavior for different message types that a full node
@@ -41,14 +44,28 @@ def handleMessage(sock: socket.socket, message: dict, neighbors: set, miners: se
         # belongs to some list of miner processes that it wants to trust/use.
         # We will default to accepting new miners that want to work for us.
         response = {"Type": MessageTypes.Join_As_Miner_Response, "Decision": "Yes"}
+        miner_addr = connections[sock].split(":")
+        miner_addr_tuple = (miner_addr[0], int(miner_addr[1]))
+        miners.add(miner_addr_tuple)
         # send decision to miner so it knows we accepted it and will send
         # tasks its way soon; keep socket open and save it
         Utilities.sendMessage(response, True, sock=sock, connections=connections)
+
+        # #############TODO: edit this after testing
+        start_new_block_message = {"Type": MessageTypes.Start_New_Block, "Transactions": transactions,
+                                    "Prev_Hash": "12345", "Block_Index": 10}
+        Utilities.sendMessage(start_new_block_message, True, sock=sock, connections=connections)
+        ################
+
     elif msgtype == MessageTypes.Send_Block:
         # TODO: HANDLE THE ACCEPTANCE
-        print(f"Miner {connections[sock]} found block after ")
-        
-
+        print(f"Miner {connections[sock]} found block after {time.time() - START_TIME} seconds")
+        exit(1)
+    
+    
+    
+    else:
+        pass
 
     # TODO: Implement handling of other messages that a full node should expect.
     #       Right now, we are only handling messages needed to talk with miners.
@@ -129,9 +146,8 @@ def main():
 
     # TODO: last time we pinged neighbors <------------- PING NEIGHBORS AND UPDATE THE SET OF THEM
     
-
-    ##### TESTING ######
-    transactions = ["This is transaction 1 data", "This is transaction 2 data", "This is transaction 3 data"]
+    ##### TODO: TESTING ######
+    START_TIME = time.time()
     ####################
 
 

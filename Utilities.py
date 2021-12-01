@@ -164,7 +164,7 @@ class Utilities:
             for item in transactions:
                 if type(item) != dict:
                     return False
-            previous_hash = message.get("Previous_Hash", 0)
+            previous_hash = message.get("Prev_Hash", 0)
             if not previous_hash or previous_hash != str:
                 return False
             block_index = message.get("Block_Index", 0)
