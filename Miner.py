@@ -22,12 +22,33 @@ class Miner:
 
     # this is here for testing purposes
     def override_difficulty(self, d):
-        self.difficulty = d   
+        self.difficulty = d
+
+    # connect to the provided full node
+    def connect_to_node(URL: tuple, parent: socket.socket):
+        '''
+        Attempts to join the full node as a miner.
+        Returns: 1 if successful, 0 otherwise
+        '''
+        message = {"Type": MessageTypes.Join_As_Miner}
+        Utilities.sendMessage(message, True, URL, parent)
+        parent.settimeout(5)
+        response = Utilities.readMessage(parent)
+        if response is not None:
+            if response.get("Type", 0) != MessageTypes.Join_As_Miner_Response or response.get("Decision", '') != "Yes":
+                print("Should have gotten an affirmative join as miner response")
+                return 0
+        return 1
+        
 
     def run(self, URL):
         parent = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            parent.connect(URL)
+            rc = self.connect_to_node(URL, parent)
+            if rc == 0:
+                # issue connecting to full node as miner
+                parent.close()
+                exit(-1)
         except:
             print("Failed to connect to specified full node")
             parent.close()
@@ -41,7 +62,7 @@ class Miner:
             # if so, deal with it
             if readable:
                 res = Utilities.readMessage(parent)
-                if res is None or res.get("Type", '') != MessageTypes.Send_Block:
+                if res is None or res.get("Type", '') != MessageTypes.Start_New_Block:
                     continue
                 try:
                     transactions = res.get("Transactions", [])
