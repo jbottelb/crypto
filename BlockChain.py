@@ -63,6 +63,9 @@ class Block:
         return j
 
     def __str__(self):
+        '''
+        DOES NOT INCLUDE HASH FOR MINING PUROSES
+        '''
         block_str = ""
         block_str += "Block index: " + str(self.index) + "\n"
         block_str += "Prev Hash: " + str(self.prev_hash) + "\n"
@@ -71,6 +74,5 @@ class Block:
         block_str += "Transactions"
         for t in self.transactions:
             block_str += str(t) + "\n"
-        if self.hash:
-            block_str += "Hash: " + self.hash
+
         return block_str

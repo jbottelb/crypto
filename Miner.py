@@ -56,6 +56,9 @@ class Miner:
             # if mining status should change (enough transactions)
             if block:
                 mining = True
+                self.block.index = block.index
+                self.block.transactions = block.transactions
+                self.prev_hash = block.prev_hash
             else:
                 mining = False
 
@@ -63,7 +66,7 @@ class Miner:
             if mining and block:
                 hash = self.mine(block, N)
 
-    def mine(self, block, iterations=None):
+    def mine(self, iterations=None):
         '''
         Finds an appropriate sha256 hash for a block
 
@@ -71,7 +74,7 @@ class Miner:
         (useful if single-threaded and listening to parent)
         '''
         i = 0
-        self.block = block
+
         hash = sha256(str(self.block).encode()).hexdigest()
         while not hash.startswith(self.difficulty * "0"):
             # only mine a select number of times
@@ -80,13 +83,13 @@ class Miner:
                 if i >= iterations:
                     return None
             self.block.nonce += 1
-            hash = sha256(str(self.block).encode()).hexdigest()
+            hash = sha256(str(block.string_for_mining()).encode()).hexdigest()
         self.block.hash = hash
-        self.block.miner_pk = self.pk
         return hash
 
 if __name__ == "__main__":
     _, pk, host, port = sys.argv
     URL = (host, port)
+    miner.block = Block("0", "0", pk)
     miner = Miner(pk)
     miner.run(URL)
