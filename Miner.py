@@ -59,7 +59,9 @@ class Miner:
                 mining = True
                 self.block.index = block.index
                 self.block.transactions = block.transactions
-                self.prev_hash = block.prev_hash
+                self.block.prev_hash = block.prev_hash
+                self.block.nonce = block.nonce
+                self.block.hash = None
             else:
                 mining = False
 
@@ -91,6 +93,6 @@ class Miner:
 if __name__ == "__main__":
     _, pk, host, port = sys.argv
     URL = (host, port)
-    miner.block = Block("0", "0", pk)
     miner = Miner(pk)
+    miner.block = Block("0", "0", pk)
     miner.run(URL)
