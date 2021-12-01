@@ -86,7 +86,7 @@ class Miner:
                 if i >= iterations:
                     return None
             self.block.nonce += 1
-            hash = sha256(str(block.string_for_mining()).encode()).hexdigest()
+            hash = sha256(str(self.block.string_for_mining()).encode()).hexdigest()
         self.block.hash = hash
         return hash
 
