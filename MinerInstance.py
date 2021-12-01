@@ -11,6 +11,7 @@ import socket
 from BlockChain import Block
 from Miner import Miner
 from Utilities import readMessage, sendMessage
+import select
 
 _, pk, host, port = sys.argv
 URL = (host, port)
@@ -18,7 +19,7 @@ URL = (host, port)
 N = 1000
 
 def listener():
-    parent = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+    parent = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     parent.connect(URL)
     block = None
     hash = None
@@ -31,7 +32,7 @@ def listener():
             res = readMessage(parent)
             try:
                 block = Block(res["index"], res["prev_hash"], res["pk"])
-                for t in red["transactions"]:
+                for t in res["transactions"]:
                     block.add_transaction(t)
             except Exception as e:
                 print(e)
@@ -47,11 +48,11 @@ def listener():
             mining = False
 
         # if we are mining, mine for a bit
-        if Mining and b:
-            hash = minier.mine(b, N)
+        if mining and block:
+            hash = miner.mine(block, N)
 
 if __name__ == "__main__":
     miner = Miner()
 
 
-    miner.mine(b)
+    miner.mine(block)
