@@ -58,7 +58,7 @@ def handleMessage(sock: socket.socket, message: dict, neighbors: set, miners: se
         ################
 
     elif msgtype == MessageTypes.Send_Block:
-        # TODO: HANDLE THE ACCEPTANCE
+        # TODO: HANDLE THE ACCEPTANCE (In real implementation, this will need to check if its coming from miner)
         print(f"Miner {connections[sock]} found block after {time.time() - START_TIME} seconds")
         exit(1)
     
