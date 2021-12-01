@@ -25,15 +25,18 @@ class Miner:
         self.difficulty = d
 
     # connect to the provided full node
-    def connect_to_node(URL: tuple, parent: socket.socket):
+    def connect_to_node(self, parent: socket.socket):
         '''
         Attempts to join the full node as a miner.
         Returns: 1 if successful, 0 otherwise
         '''
         message = {"Type": MessageTypes.Join_As_Miner}
-        Utilities.sendMessage(message, True, URL, parent)
+        print("0")
+        Utilities.sendMessage(message, True, sock=parent)
+        print("1")
         parent.settimeout(5)
         response = Utilities.readMessage(parent)
+        print("2")
         if response is not None:
             if response.get("Type", 0) != MessageTypes.Join_As_Miner_Response or response.get("Decision", '') != "Yes":
                 print("Should have gotten an affirmative join as miner response")
@@ -43,13 +46,17 @@ class Miner:
 
     def run(self, URL):
         parent = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        parent.connect(URL)
         try:
-            rc = self.connect_to_node(URL, parent)
+            print("In try block")
+            rc = self.connect_to_node(parent)
+            print("in try block")
             if rc == 0:
                 # issue connecting to full node as miner
                 parent.close()
                 exit(-1)
-        except:
+        except Exception as e:
+            print(e)
             print("Failed to connect to specified full node")
             parent.close()
             exit(-1)
@@ -97,6 +104,7 @@ class Miner:
 
             # if we are mining, mine for a bit
             if mining and block:
+                print("starting to mine")
                 hash = self.mine(N)
 
     def mine(self, iterations=None):

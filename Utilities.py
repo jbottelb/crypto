@@ -165,7 +165,7 @@ class Utilities:
                 if type(item) != dict:
                     return False
             previous_hash = message.get("Prev_Hash", 0)
-            if not previous_hash or previous_hash != str:
+            if not previous_hash or type(previous_hash) != str:
                 return False
             block_index = message.get("Block_Index", 0)
             if not block_index or type(block_index) != int or block_index < 0:
