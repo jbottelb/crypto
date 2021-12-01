@@ -5,7 +5,7 @@ Implementation of a miner
 
 from BlockChain import DIFFICULTY, Block
 from hashlib import sha256
-from Utilities import readMessage, sendMessage
+from Utilities import Utilities
 import select
 import sys
 import socket
@@ -27,6 +27,7 @@ class Miner:
         '''
         Returns node to mine for
         '''
+        Utilities.sendMessage()
 
         pass
 
@@ -40,7 +41,7 @@ class Miner:
             readable, _, _ = select.select([parent], [], [], 60)
             # if so, deal with it
             if readable:
-                res = readMessage(parent)
+                res = Utilities.readMessage(parent)
                 try:
                     block = Block(res["index"], res["prev_hash"], res["pk"])
                     for t in res["transactions"]:
@@ -50,7 +51,7 @@ class Miner:
                     block = None
             elif hash:
                 # send back block
-                sendMessage(dict(self.block), True, None, parent)
+                Utilities.sendMessage(dict(self.block), True, None, parent)
 
             # if mining status should change (enough transactions)
             if block:
@@ -74,7 +75,7 @@ class Miner:
         hash = sha256(str(self.block).encode()).hexdigest()
         while not hash.startswith(self.difficulty * "0"):
             # only mine a select number of times
-            if iterantions:
+            if iterations:
                 i += 1
                 if i >= iterations:
                     return None

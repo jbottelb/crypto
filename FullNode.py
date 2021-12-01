@@ -14,6 +14,9 @@ import select
 from MessageTypes import MessageTypes
 from Utilities import Utilities
 import BlockChain
+import time
+
+START_TIME = 0
 
 '''
 Handles behavior for different message types that a full node
@@ -21,7 +24,8 @@ expects to receive. Ignores messages that are irrelevant to
 full nodes.
 Returns: nothing
 '''
-def handleMessage(sock: socket.socket, message: dict, neighbors: set, miners: set, connections: dict):
+def handleMessage(sock: socket.socket, message: dict, neighbors: set, miners: set, 
+                  blockchain: BlockChain.BlockChain, connections: dict):
     msgtype = message.get("Type", 0)
     if not msgtype:
         return
@@ -38,9 +42,12 @@ def handleMessage(sock: socket.socket, message: dict, neighbors: set, miners: se
         # We will default to accepting new miners that want to work for us.
         response = {"Type": MessageTypes.Join_As_Miner_Response, "Decision": "Yes"}
         # send decision to miner so it knows we accepted it and will send
-        # tasks its way soon
-        Utilities.
-
+        # tasks its way soon; keep socket open and save it
+        Utilities.sendMessage(response, True, sock=sock, connections=connections)
+    elif msgtype == MessageTypes.Send_Block:
+        # TODO: HANDLE THE ACCEPTANCE
+        print(f"Miner {connections[sock]} found block after ")
+        
 
 
     # TODO: Implement handling of other messages that a full node should expect.
@@ -49,6 +56,7 @@ def handleMessage(sock: socket.socket, message: dict, neighbors: set, miners: se
 
 
 def main():
+
     if len(sys.argv) < 2 or len(sys.argv) > 3:
         print("Usage: python3 FullNode.py <port> [<trusted_hostname:port>]")
         exit(-1)
@@ -119,7 +127,12 @@ def main():
     # dict of socket connections
     connections = {main_sock: f"localhost:{port}"}
 
-    # last time we pinged neighbors
+    # TODO: last time we pinged neighbors <------------- PING NEIGHBORS AND UPDATE THE SET OF THEM
+    
+
+    ##### TESTING ######
+    transactions = ["This is transaction 1 data", "This is transaction 2 data", "This is transaction 3 data"]
+    ####################
 
 
     while 1:
@@ -140,7 +153,7 @@ def main():
                 # read from the socket
                 message = Utilities.readMessage(sock, connections)
                 if message is not None:
-                    handleMessage(sock, message, neighbors, miners, connections)
+                    handleMessage(sock, message, neighbors, miners, blockchain, connections)
         # handle any issues with sockets
         for sock in exceptional:
             if sock == main_sock:
@@ -164,6 +177,9 @@ def main():
                 except:
                     pass
                 del connections[sock]
+        
+        # TODO: update pending_transactions pool if a block was found and send
+        #       new start_new_block message to miners
 
 if __name__ == "__main__":
     main()
