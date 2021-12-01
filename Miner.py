@@ -122,7 +122,7 @@ class Miner:
 
 if __name__ == "__main__":
     _, pk, host, port = sys.argv
-    URL = (host, port)
+    URL = (host, int(port))
     miner = Miner(pk)
     miner.block = Block("0", "0", pk)
     miner.run(URL)
