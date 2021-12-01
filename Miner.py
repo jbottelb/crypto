@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 '''
-Implementation of a miner
+Implementation of a miner node
 '''
 
 from BlockChain import DIFFICULTY, Block
