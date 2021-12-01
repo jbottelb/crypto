@@ -48,6 +48,20 @@ class Block:
         # stringify
         return json.dumps(j)
 
+    def __dict__(self):
+        '''
+        Converts Block to json string
+        '''
+        j = {}
+        j["index"]        = self.index
+        j["prev_hash"]    = self.prev_hash
+        j["miner_pk"]     = self.miner_pk
+        j["nonce"]        = self.nonce
+        j["transactions"] = self.transactions
+        j["hash"]         = self.hash
+        # stringify
+        return j
+
     def __str__(self):
         block_str = ""
         block_str += "Block index: " + str(self.index) + "\n"
