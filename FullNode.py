@@ -18,7 +18,7 @@ import time
 
 ### TODO: TESTING ######
 START_TIME = 0
-transactions = ["This is transaction 1 data", "This is transaction 2 data", "This is transaction 3 data"]
+TRANSACTIONS = [{"test": "This is transaction 1 data"}, {"test": "This is transaction 2 data"}, {"test": "This is transaction 3 data"}]
 #####################33
 
 '''
@@ -52,7 +52,7 @@ def handleMessage(sock: socket.socket, message: dict, neighbors: set, miners: se
         Utilities.sendMessage(response, True, sock=sock, connections=connections)
 
         # #############TODO: edit this after testing
-        start_new_block_message = {"Type": MessageTypes.Start_New_Block, "Transactions": transactions,
+        start_new_block_message = {"Type": MessageTypes.Start_New_Block, "Transactions": TRANSACTIONS,
                                     "Prev_Hash": "12345", "Block_Index": 10}
         Utilities.sendMessage(start_new_block_message, True, sock=sock, connections=connections)
         ################

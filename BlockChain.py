@@ -10,7 +10,7 @@ import json
 # transactions per block
 TPB = 5
 # number of leading zeros on computed hashed
-DIFFICULTY = 1
+DIFFICULTY = 4
 # reward for mining Block
 COINBASE = 10
 
