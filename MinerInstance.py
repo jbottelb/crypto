@@ -19,8 +19,7 @@ N = 1000
 
 def listener():
     parent = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-    parent.bind(URL)
-    parent.listen()
+    parent.connect(URL)
     block = None
     hash = None
     mining = False
