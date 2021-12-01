@@ -31,10 +31,10 @@ active_seeds = set()
 possible_seeds = set()
 
 # returns a string 
-def get_active_seeds_response_dict():
+def getActiveSeedsResponseDict():
     return {"Type": "Get_Seed_Nodes_Response", "Nodes": list(active_seeds)}
 
-def ping_seed_nodes():
+def pingSeedNodes():
     for ps in possible_seeds:
         if Utilities.pingNode(ps):
             # yes -> add to active seeds
@@ -51,7 +51,7 @@ Returns: nothing
 def handleMessage(sock: socket.socket, message: dict, connections: dict):
     if message.get("Type", 0) == MessageTypes.Get_Seed_Nodes:
         # appropriate request, return list of seed nodes
-        responsedict = get_active_seeds_response_dict()
+        responsedict = getActiveSeedsResponseDict()
         rc = Utilities.sendMessage(responsedict, False, sock=sock, connections=connections)
     else:
         # improperly formatted request for seed node addresses
@@ -108,7 +108,7 @@ def main():
     while 1:
         # ping seed nodes at the specified interval to determine which are active
         if int(time.time() - latest_ping) > int(ping_interval) or first_ping:
-            ping_seed_nodes()
+            pingSeedNodes()
             first_ping = False
             latest_ping = time.time() 
 
