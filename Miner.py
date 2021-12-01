@@ -53,8 +53,9 @@ class Miner:
                 # send back block
                 Utilities.sendMessage(dict(self.block), True, None, parent)
 
-            # if mining status should change (enough transactions)
+            # if we recieved a block from the full node
             if block:
+                hash = None
                 mining = True
                 self.block.index = block.index
                 self.block.transactions = block.transactions
