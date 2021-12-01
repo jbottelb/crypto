@@ -18,7 +18,7 @@ URL = (host, port)
 
 N = 1000
 
-def listener():
+def listener(miner):
     parent = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     parent.connect(URL)
     block = None
@@ -53,6 +53,4 @@ def listener():
 
 if __name__ == "__main__":
     miner = Miner()
-
-
-    miner.mine(block)
+    listener(miner)
