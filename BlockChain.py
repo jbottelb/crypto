@@ -103,15 +103,8 @@ class Block:
         '''
         Converts Block to json string
         '''
-        j = {}
-        j["index"]        = self.index
-        j["prev_hash"]    = self.prev_hash
-        j["miner_pk"]     = self.miner_pk
-        j["nonce"]        = self.nonce
-        j["transactions"] = self.transactions
-        j["hash"]         = self.hash
         # stringify
-        return json.dumps(j)
+        return json.dumps(self.to_json())
 
     def to_json(self):
         '''
