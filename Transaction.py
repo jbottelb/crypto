@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 import json
 import datetime
-from Crypto.Hash import SHA256
-from Crypto.PublicKey import RSA
-from Crypto.Signature import PKCS1_v1_5
+from RSA_Keys import RSA_Keys as RK
+from Wallet import Wallet
 
 class Transaction:
     def __init__(self, sender, recipient, amount):
@@ -13,35 +12,57 @@ class Transaction:
         self.amount = amount
         self.signature = None
 
-    def verify_transaction(self):
-        pass
+    def generate_transaction(Wallet, amount, recipient_key):
+        '''
+        Uses a wallet to create a transaction
 
-    def sign(self, signer):
-        t = SHA256.new(self.to_json().encode())
-        self.signature = signer.sign(t)
+        Takes a public key of a recipient and an amount
+        and creates a transaction sending them that amount
+        '''
+        T = Transaction(Wallet.public_key, recipient_key, amount)
+        T.sign(Wallet.secret_key)
+        return T
+
+    def verify_transaction(self):
+        '''
+        Verifys the transcation is valid cryptographicallty by public key of
+        sender and signature
+        '''
+        if not self.signature:
+            return False
+        return RK.verify(self.sender, self.to_string(False), self.signature)
+
+    def sign(self, sk):
+        '''
+        Signs transaction with secret key
+        '''
+        self.signature = RK.sign(sk, self.to_string(False))
         return self.signature
 
 
-    def to_json(self):
+    def to_json(self, sig=True):
+        '''
+        Returns a json of the transaction
+        '''
         j = {}
         j["tid"] = str(self.tid)
         j["sender"] = str(self.sender)
         j["recipient"] = str(self.recipient)
         j["amount"] = str(self.amount)
-        if self.signature:
+        if self.signature and sig:
             j["signature"] = str(self.signature)
+        return j
 
-        return json.dumps(j)
-
-    def __str__(self):
-        return self.to_json
+    def to_string(self, sig=True):
+        '''
+        Makes the json of the transcation a string
+        '''
+        return json.dumps(self.to_json(sig))
 
 if __name__=="__main__":
-    key = RSA.generate(4096)
-    public_key = key.publickey().exportKey('PEM')
-    private_key = key.exportKey('PEM')
-    signer = PKCS1_v1_5.new(key)
+    # Testing
+    w1 = Wallet(RK.generate_keys())
+    w2 = Wallet(RK.generate_keys())
 
-    t = Transaction(public_key, "anything", 5)
-    t.sign(signer)
-    print(t.to_json())
+    T = Transaction.generate_transaction(w1, 10, w2.public_key)
+    print(T.verify_transaction())
