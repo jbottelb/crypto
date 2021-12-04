@@ -20,9 +20,36 @@ class BlockChain:
         self.block_chain = []
         self.block_chain.append(create_genesis())
         self.length = 1
+        # we may want to hold a copy of all  balances
+        self.user_balances = None
 
     def create_genesis():
+        '''
+        Import a genesis text file, if it exists
+        Otherwise, do some simple block creation
+        '''
         return None
+
+    def validate_transaction(self, T):
+        '''
+        Check if the sender of the transcation can send the amount
+        based off thier total in a blockchain
+        '''
+        pass
+
+    def validate_all_transactions(self, T):
+        '''
+        Check the running total of the entire blockchain for all public keys
+        to make sure all totals add up
+        This is a step in the verification process
+        '''
+        pass
+
+    def get_pk_total(self, pk):
+        '''
+        Gets the total balance of a user throught the blockchain
+        '''
+        pass
 
 class Block:
     def __init__(self, index, prev_hash, pk):
@@ -30,26 +57,49 @@ class Block:
         self.prev_hash = prev_hash
         self.miner_pk = pk
         self.nonce = random.randint(0, DIFFICULTY * 100000000)
-
         self.transactions = []
         self.hash = None
 
     def add_transaction(self, transaction):
         self.transactions.append(transaction)
 
-    def verify_transactions(self, send_bad_block=False):
+    def verify_transactions(self, send_bad_transaction=False):
         '''
         Checks signatures of all transcations
         option to return the bad block if one is found
+        DOES NOT CHECK IF THE SENDER CAN SEND THE BALANCE
+        (it is quicker to just do that when we validate the block)
         '''
         for t in self.transcations:
             if not Transaction.verify_transaction(t):
-                if send_bad_block:
+                if send_bad_transaction:
                     return t
                 return False
         return True
 
-    def to_json(self):
+    def validate_block(self, balances=None):
+        '''
+        Do the process for validating the block
+
+        The balances arg is used if we are validating all blocks, and speeds
+        up the process so we do not need to check the transcations of every
+        previous block for every block
+        '''
+        if not balances:
+            balances = {}
+            # find the balances up to this block
+
+        # check prev hash
+
+        # check hash
+
+        # verify transactions
+
+        # validate transactions
+
+        return balances
+
+    def to_string(self):
         '''
         Converts Block to json string
         '''
@@ -63,9 +113,9 @@ class Block:
         # stringify
         return json.dumps(j)
 
-    def __dict__(self):
+    def to_json(self):
         '''
-        Converts Block to json string
+        Converts Block to dictionary
         '''
         j = {}
         j["index"]        = self.index
