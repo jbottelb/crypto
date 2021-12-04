@@ -6,20 +6,23 @@ Includes functions for keeping track and communicating with other nodes.
 '''
 import random
 import json
+from Transaction import Transaction
 
 # transactions per block
 TPB = 5
 # number of leading zeros on computed hashed
 DIFFICULTY = 4
 # reward for mining Block
-COINBASE = 10
+COINBASE = 10 # (we do not support depreciation of value for mining blocks)
 
 class BlockChain:
     def __init__(self):
-        pass
+        self.block_chain = []
+        self.block_chain.append(create_genesis())
+        self.length = 1
 
     def create_genesis():
-        pass
+        return None
 
 class Block:
     def __init__(self, index, prev_hash, pk):
@@ -33,6 +36,18 @@ class Block:
 
     def add_transaction(self, transaction):
         self.transactions.append(transaction)
+
+    def verify_transactions(self, send_bad_block=False):
+        '''
+        Checks signatures of all transcations
+        option to return the bad block if one is found
+        '''
+        for t in self.transcations:
+            if not Transaction.verify_transaction(t):
+                if send_bad_block:
+                    return t
+                return False
+        return True
 
     def to_json(self):
         '''
