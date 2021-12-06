@@ -11,7 +11,8 @@ import sys
 import socket
 from MessageTypes import MessageTypes
 
-N = 1000
+N = 10000 # determines number of nonce values to test before
+          # pausing mining to listen for new messages
 
 class Miner:
     def __init__(self, pk):
@@ -31,12 +32,9 @@ class Miner:
         Returns: 1 if successful, 0 otherwise
         '''
         message = {"Type": MessageTypes.Join_As_Miner}
-        print("0")
         Utilities.sendMessage(message, True, sock=parent)
-        print("1")
         parent.settimeout(5)
         response = Utilities.readMessage(parent)
-        print("2")
         if response is not None:
             if response.get("Type", 0) != MessageTypes.Join_As_Miner_Response or response.get("Decision", '') != "Yes":
                 print("Should have gotten an affirmative join as miner response")
@@ -48,9 +46,7 @@ class Miner:
         parent = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         parent.connect(URL)
         try:
-            print("In try block")
             rc = self.connect_to_node(parent)
-            print("in try block")
             if rc == 0:
                 # issue connecting to full node as miner
                 parent.close()
@@ -65,7 +61,7 @@ class Miner:
         mining = False
         while True:
             # check if there is a message from the Node
-            readable, _, _ = select.select([parent], [], [], 60)
+            readable, _, _ = select.select([parent], [], [], 0.1)
             # if so, deal with it
             if readable:
                 res = Utilities.readMessage(parent)
@@ -82,15 +78,17 @@ class Miner:
                     print(e)
                     block = None
             elif hash:
-                # send back block
-                message = {"Type": "Send_Block", "Block_Index": block.index, "Prev_Hash": block.prev_hash,
-                            "Nonce": block.nonce, "Hash": block.hash, "Transactions": block.transactions,
-                            "Previous_Message_Recipients": []}
+                # We found a hash before receiving a new block to mine; send back block
+                message = {"Type": MessageTypes.Send_Block, "Block_Index": block.index, "Miner_PK": self.pk, 
+                            "Prev_Hash": block.prev_hash, "Nonce": block.nonce, "Hash": block.hash, 
+                            "Transactions": block.transactions, "Previous_Message_Recipients": []}
+                print(f"Message from miner to parent full node after finding a block: \n{message}")
                 Utilities.sendMessage(message, True, None, parent)
                 mining = False
                 block = None
 
-            # if we recieved a block from the full node
+            # if we recieved a block from the full node, update our personal
+            # block object (which we will convert to a string to mine on)
             if block:
                 hash = None
                 mining = True
@@ -111,7 +109,8 @@ class Miner:
         '''
         Finds an appropriate sha256 hash for a block
 
-        Iterations: specifies the number of times we should mine for
+        Iterations: specifies the number of nonce values to try before listening
+        for new messages from the parent full node
         (useful if single-threaded and listening to parent)
         '''
         i = 0
@@ -124,13 +123,17 @@ class Miner:
                 if i >= iterations:
                     return None
             self.block.nonce += 1
-            hash = sha256(str(self.block.string_for_mining()).encode()).hexdigest()
+            hash = sha256(self.block.string_for_mining().encode()).hexdigest()
         self.block.hash = hash
         return hash
 
 if __name__ == "__main__":
-    _, pk, host, port = sys.argv
+    if len(sys.argv != 3):
+        print("Usage: python3 Miner.py <Miner public key> <Full node host> <Full node port>")
+    miner_pk = sys.argv[1]
+    host = sys.argv[2]
+    port = sys.argv[3]
     URL = (host, int(port))
-    miner = Miner(pk)
-    miner.block = Block("0", "0", pk)
+    miner = Miner(miner_pk)
+    miner.block = Block("0", "0", miner_pk)
     miner.run(URL)

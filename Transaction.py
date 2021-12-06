@@ -23,9 +23,9 @@ class Transaction:
         T.sign(Wallet.secret_key)
         return T
 
-    def verify_transaction(self):
+    def verify_transaction_authenticity(self):
         '''
-        Verifys the transcation is valid cryptographicallty by public key of
+        Verifies the transcation is valid cryptographically by public key of
         sender and signature
         '''
         if not self.signature:
@@ -65,4 +65,4 @@ if __name__=="__main__":
     w2 = Wallet(RK.generate_keys())
 
     T = Transaction.generate_transaction(w1, 10, w2.public_key)
-    print(T.verify_transaction())
+    print(T.verify_transaction_authenticity())

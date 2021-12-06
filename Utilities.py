@@ -85,10 +85,13 @@ class Utilities:
                     return False
             return True
         elif msgtype == MessageTypes.Send_Block:
-            if len(message.keys()) != 7:
+            if len(message.keys()) != 8:
                 return False
             block_index = message.get("Block_Index", -1)
             if block_index == -1 or type(block_index) != int:
+                return False
+            miner_pk = message.get("Miner_PK", 0)
+            if not miner_pk or type(miner_pk) != str:
                 return False
             prev_hash = message.get("Prev_Hash", 0)
             if not prev_hash or type(prev_hash) != str:
@@ -399,12 +402,5 @@ class Utilities:
             if connections is not None:
                 del connections[sock]
         return 1
-
-    '''
-    sendMessage - keepSocketOpen? - Yes - take in addr, take in connections, create socket, add to connections, send message
-                                    - No  - take in addr, create socket, send message, close socket (sending messages for which you need no response)
-
-    When to keep a socket open? When you expect to get a response from that socket after a message you are sending.
-    '''
 
     

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 '''
 Brad Budden and Josh Bottelberghe
 Distributed Systems - Final Project
@@ -17,7 +18,9 @@ import BlockChain
 import time
 
 ### TODO: TESTING ######
-START_TIME = 0
+START_TIME = {"start_time": 0}
+FIRST_MINER = {"first": True}
+FIRST_FINISHED = {"first": True}
 TRANSACTIONS = [{"test": "This is transaction 1 data"}, {"test": "This is transaction 2 data"}, {"test": "This is transaction 3 data"}]
 #####################33
 
@@ -55,12 +58,18 @@ def handleMessage(sock: socket.socket, message: dict, neighbors: set, miners: se
         start_new_block_message = {"Type": MessageTypes.Start_New_Block, "Transactions": TRANSACTIONS,
                                     "Prev_Hash": "12345", "Block_Index": 10}
         Utilities.sendMessage(start_new_block_message, True, sock=sock, connections=connections)
+        ##### TODO: TESTING ######
+        if FIRST_MINER["first"]:
+            START_TIME["start_time"] = time.time()
+            FIRST_MINER["first"] = False
+        ####################
         ################
 
     elif msgtype == MessageTypes.Send_Block:
         # TODO: HANDLE THE ACCEPTANCE (In real implementation, this will need to check if its coming from miner)
-        print(f"Miner {connections[sock]} found block after {time.time() - START_TIME} seconds")
-        exit(1)
+        print(f"Miner {connections[sock]} found block after {time.time() - START_TIME['start_time']} seconds")
+        # if FIRST_FINISHED["first"]:
+        #     FIRST_FINISHED["first"] = False
     
     
     
@@ -75,7 +84,7 @@ def handleMessage(sock: socket.socket, message: dict, neighbors: set, miners: se
 def main():
 
     if len(sys.argv) < 2 or len(sys.argv) > 3:
-        print("Usage: python3 FullNode.py <port> [<trusted_hostname:port>]")
+        print("Usage: FullNode.py <port> [<trusted_hostname:port>]")
         exit(-1)
     
     port = int(sys.argv[1])
@@ -87,7 +96,7 @@ def main():
             trusted_host = trusted_host.split(":")
             trusted_host = (trusted_host[0], int(trusted_host[1]))
         except:
-            print("Usage: python3 FullNode.py <port> [<trusted_hostname:port>]")
+            print("Usage: FullNode.py <port> [<trusted_hostname:port>]")
             exit(-1)
     
     # stores (hostname, port) pairs of other full nodes in the system
@@ -135,7 +144,7 @@ def main():
         print("No active full nodes discovered")
         exit(-1)
 
-    print(neighbors)
+    # TODO: print(neighbors)
     
     main_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     main_sock.bind(("", port))
@@ -144,11 +153,7 @@ def main():
     # dict of socket connections
     connections = {main_sock: f"localhost:{port}"}
 
-    # TODO: last time we pinged neighbors <------------- PING NEIGHBORS AND UPDATE THE SET OF THEM
-    
-    ##### TODO: TESTING ######
-    START_TIME = time.time()
-    ####################
+    # TODO: last time we pinged neighbors <------------- PING NEIGHBORS (and miners) AND UPDATE THE SET OF THEM
 
 
     while 1:
@@ -162,7 +167,7 @@ def main():
                 connections[conn] = f"{addr[0]}:{addr[1]}"
                 # add never before seen nodes to neighbors
                 neighbors.add(addr)
-                print(f"Received ping from : {addr}")
+                # TODO: print(f"Received ping from : {addr}")
             # otherwise, we have another node making a request or closing
             # a connection
             else:

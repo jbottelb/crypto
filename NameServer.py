@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 '''
 Brad Budden and Josh Bottelberghe
 Distributed Systems - Final Project
@@ -76,7 +77,7 @@ def updateCatalog(port: int, project_name: str) -> None:
 
 def main():
     if len(sys.argv) != 3:
-        print("Usage: python3 NameServer.py <port> <ping_interval>")
+        print("Usage: NameServer.py <port> <ping_interval>")
         exit(-1)
     
     name_server_port = int(sys.argv[1])
