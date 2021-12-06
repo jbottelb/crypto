@@ -31,11 +31,10 @@ class BlockChain:
         else:
             # create a blockchain from scratch
             self.block_chain.append(create_genesis())
-        # we may want to hold a copy of all balances
-        # key pair of public key, balance
+        # holds the balances of all users
         self.user_balances = None
 
-    def create_genesis(data=None):
+    def create_genesis(self, data=None):
         '''
         Import a genesis text file, if it exists
         Otherwise, do some simple block creation, data will be a list of
@@ -49,6 +48,9 @@ class BlockChain:
         else:
             with open("genesis.json") as j:
                 block["transactions"] = list(json.load(f).items())
+        self.length = 1
+        for T in block["transactions"]:
+            self.user_balances[T[0]] = int(T[1])
         return self.block_chain[0]
 
     def add_block(self, data):
@@ -68,9 +70,13 @@ class BlockChain:
         Check if the sender of the transcation can send the amount
         based off thier total in a blockchain
         '''
-        pass
+        if not self.user_balances:
+            self.compute_user_balances()
+        if self.user_balances[T["sender"]] and self.user_balances[T["sender"]] < T["amount"]:
+            return True
+        return False
 
-    def validate_all_transactions(self, T):
+    def validate_all_transactions(self):
         '''
         Check the running total of the entire blockchain for all public keys
         to make sure all totals add up
@@ -81,6 +87,19 @@ class BlockChain:
     def get_pk_total(self, pk):
         '''
         Gets the total balance of a user throught the blockchain
+        '''
+        pass
+
+    def compute_user_balances(self):
+        '''
+        computes all the users balances across the blockchain
+        computationally expensive
+        '''
+        pass
+
+    def verify_blockchain(self):
+        '''
+        Verifies entire blockchain
         '''
         pass
 
