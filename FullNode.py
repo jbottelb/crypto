@@ -17,20 +17,15 @@ from Utilities import Utilities
 import BlockChain
 import time
 from Constants import Constants
+from BlockChainCollection import BlockChainCollection
 
-### TODO: TESTING ######
-START_TIME = {"start_time": 0}
-FIRST_MINER = {"first": True}
-FIRST_FINISHED = {"first": True}
-TRANSACTIONS = [{"test": "This is transaction 1 data"}, {"test": "This is transaction 2 data"}, {"test": "This is transaction 3 data"}]
-#####################33
 
 def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: set, 
                   blockchain: BlockChain.BlockChain, connections: dict):
     '''
     Handles behavior for different message types that a full node
     expects to receive. Ignores messages that are irrelevant to
-    full nodes.
+    full nodes. May update neighbors, miners, blockchain, and connections.
     Returns: nothing
     '''
     msgtype = message.get("Type", 0)
@@ -54,23 +49,9 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
         # send decision to miner so it knows we accepted it and will send
         # tasks its way soon; keep socket open and save it
         Utilities.sendMessage(response, True, sock=sock, connections=connections)
-
-        # #############TODO: edit this after testing
-        start_new_block_message = {"Type": MessageTypes.Start_New_Block, "Transactions": TRANSACTIONS,
-                                    "Prev_Hash": "12345", "Block_Index": 10}
-        Utilities.sendMessage(start_new_block_message, True, sock=sock, connections=connections)
-        ##### TODO: TESTING ######
-        if FIRST_MINER["first"]:
-            START_TIME["start_time"] = time.time()
-            FIRST_MINER["first"] = False
-        ####################
-        ################
-
     elif msgtype == MessageTypes.Send_Block:
         # TODO: HANDLE THE ACCEPTANCE (In real implementation, this will need to check if its coming from miner)
-        print(f"Miner {connections[sock]} found block after {time.time() - START_TIME['start_time']} seconds")
-        # if FIRST_FINISHED["first"]:
-        #     FIRST_FINISHED["first"] = False
+        if 
     
     
     
@@ -115,11 +96,8 @@ def main():
     miners = set()
     # set of pending transactions (i.e., not yet added to blockchain)
     pending_transactions = set()
-    # personal copy of longest blockchain
-    blockchain = BlockChain.BlockChain()
-    # create a genesis block if this node is to act as a seed node
-    if "-s" in sys.argv:
-        blockchain.create_genesis()
+    # create set of orphan blocks
+    orphan_blocks = set()
 
     # handle having a trusted host to start with (As a full node)
     if trusted_host is not None:
@@ -158,6 +136,42 @@ def main():
         exit(-1)
 
     # TODO: print(neighbors)
+
+    # The blockchains_collection will hold multiple forks of the blockchain
+    # (if needed) and abstract the appending of blocks
+    blockchains_collection = BlockChainCollection()
+    # create a blockchain and a genesis block if this node is to act as a seed node
+    if "-s" in sys.argv:
+        # create personal copy of longest blockchain (more may be stored later);
+        # note that this blockchain fork will generate its own genesis block because
+        # no data is passed in
+        bc = BlockChain.BlockChain()
+        blockchains_collection.add_blockchain_fork(bc)
+    else:
+        # otherwise, get blockchains from neighbors and make the longest
+        # one our active fork (also store other forks of equal length)
+        longest_bc_length = 0
+        longest_bc = None
+        tied_length_blockchains = []
+        for n in neighbors:
+            bc = Utilities.getBlockchain(n) # TODO:
+            if not bc:
+                continue
+            if len(bc.block_chain) > longest_bc:
+                # found a new longest fork, store this one for now
+                longest_bc = bc
+                longest_bc = bc.length
+            elif len(bc.block_chain) == longest_bc:
+                # found a fork with same length as current longest
+                # fork, store it as well
+                tied_length_blockchains.append(bc)
+        blockchains_collection.add_blockchain_fork(longest_bc)
+        # store all the longest blockchain forks in our blockchain collection
+        for tlbc in tied_length_blockchains:
+            blockchains_collection.add_blockchain_fork(tlbc)
+
+    # TODO:
+    blockchains_collection.print_forks()
     
     main_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     main_sock.bind(("", port))
@@ -188,7 +202,6 @@ def main():
                 connections[conn] = f"{addr[0]}:{addr[1]}"
                 # add never before seen nodes to neighbors
                 neighbors.add(addr)
-                # TODO: print(f"Received ping from : {addr}")
             # otherwise, we have another node making a request or closing
             # a connection
             else:

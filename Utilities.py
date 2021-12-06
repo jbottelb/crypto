@@ -17,12 +17,12 @@ from Constants import Constants
 
 class Utilities:
 
-    '''
-    Checks if a node is alive by sending a ping.
-    Returns: 1 if alive, 0 otherwise
-    '''
     @staticmethod
     def pingNode(addr: tuple) -> int:
+        '''
+        Checks if a node is alive by sending a ping.
+        Returns: 1 if alive, 0 otherwise
+        '''
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             # see if node is running
@@ -36,13 +36,13 @@ class Utilities:
             sock.close()
             return 0
 
-    '''
-    Checks that the contents of a message are valid depending
-    on the message type.
-    Returns: True if valid, False otherwise
-    '''
     @staticmethod
     def _isValidMessage(message: dict) -> bool:
+        '''
+        Checks that the contents of a message are valid depending
+        on the message type.
+        Returns: True if valid, False otherwise
+        '''
         msgtype = message.get("Type", 0)
         if not msgtype or msgtype not in [MessageTypes.__dict__[key] for key in MessageTypes.__dict__.keys() if not key.startswith("__")]:
             return False
@@ -217,17 +217,17 @@ class Utilities:
         # TODO: check other types if more are added
         return False
 
-    '''
-    Attempts to read from the provided socket. Handles socket issues
-    and invalid message formats. Will close sockets with issues and
-    remove them from the provided connections dictionary. Converts 
-    message bytes to a python dictionary and returns it, otherwise indicates
-    an error. 
-    Returns: None if invalid message or socket issue, otherwise a dict
-    representing the message
-    '''
     @staticmethod
     def readMessage(sock: socket.socket, connections: dict = None) -> dict or None:
+        '''
+        Attempts to read from the provided socket. Handles socket issues
+        and invalid message formats. Will close sockets with issues and
+        remove them from the provided connections dictionary. Converts 
+        message bytes to a python dictionary and returns it, otherwise indicates
+        an error. 
+        Returns: None if invalid message or socket issue, otherwise a dict
+        representing the message
+        '''
         try:
             data = sock.recv(Constants.BUF_SIZE)
         except ConnectionResetError:
@@ -263,13 +263,13 @@ class Utilities:
             pass
         return None
 
-    '''
-    Tries to connect to the server by looking up the service with 
-    the specified project_name in catalog.cse.nd.edu.
-    Returns: boolean representing whether a connection was made
-    '''
     @staticmethod
     def _connectToNameServer(sock: socket.socket) -> bool:
+        '''
+        Tries to connect to the server by looking up the service with 
+        the specified project_name in catalog.cse.nd.edu.
+        Returns: boolean representing whether a connection was made
+        '''
         try:
             catalog_conn = http.client.HTTPConnection(Constants.CATALOG_ENDPOINT, Constants.CATALOG_PORT)
             catalog_conn.request("GET", "/query.json")
@@ -299,12 +299,12 @@ class Utilities:
                     return connection_made
         return connection_made
     
-    '''
-    Sends a request to the name server to get a list of active seed nodes.
-    Returns: active seed nodes if successful, None otherwise
-    '''
     @staticmethod
     def getActiveSeedNodes() -> list or None:
+        '''
+        Sends a request to the name server to get a list of active seed nodes.
+        Returns: active seed nodes if successful, None otherwise
+        '''
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             if not Utilities._connectToNameServer(sock):
@@ -331,14 +331,14 @@ class Utilities:
         sock.close()
         return None
 
-    '''
-    Attempts to get the neighbors of a provided full node. If that node 
-    is not not alive or communication issues occur, it indicates this 
-    with a None response.
-    Returns: list of neighbors (can be empty) if successful, None otherwise
-    '''
     @staticmethod
     def getNeighbors(addr: tuple) -> list or None:
+        '''
+        Attempts to get the neighbors of a provided full node. If that node 
+        is not not alive or communication issues occur, it indicates this 
+        with a None response.
+        Returns: list of neighbors (can be empty) if successful, None otherwise
+        '''
         returnList = None
         message = {"Type": MessageTypes.Get_Neighbors}
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -358,18 +358,18 @@ class Utilities:
         sock.close()
         return returnList
     
-    '''
-    Handles the mechanics of sending a message, given a message dict and either a socket
-    or an address. If a socket is provided, it will be used, regardless of any provided
-    address. Otherwise, a socket will be created for the given address. That socket
-    will either be stored in the connections dict or not, depending on the keepSocketOpen
-    boolean that is provided. If a node wants a new socket to be kept open, it must provide 
-    a connections dict for the socket to be added to.
-    Returns: 1 if successful, 0 otherwise
-    '''
     @staticmethod
     def sendMessage(message: dict, keepSocketOpen: bool, addr: tuple = None, 
                     sock: socket.socket = None, connections: dict = None) -> int:
+        '''
+        Handles the mechanics of sending a message, given a message dict and either a socket
+        or an address. If a socket is provided, it will be used, regardless of any provided
+        address. Otherwise, a socket will be created for the given address. That socket
+        will either be stored in the connections dict or not, depending on the keepSocketOpen
+        boolean that is provided. If a node wants a new socket to be kept open, it must provide 
+        a connections dict for the socket to be added to.
+        Returns: 1 if successful, 0 otherwise
+        '''
         if keepSocketOpen and not socket and not connections:
             # must provide a connections dict if a new socket is to be kept open for future use
             return 0
@@ -402,5 +402,12 @@ class Utilities:
             if connections is not None:
                 del connections[sock]
         return 1
+    
+    @staticmethod
+    def getBlockchain(neighbor: tuple):
+         '''
+        Gets an entire blockchain from a neighbor
+        '''
+        
 
     
