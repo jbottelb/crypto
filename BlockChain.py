@@ -26,15 +26,14 @@ class BlockChain:
         '''
         self.block_chain = []
         self.length = 0
+        self.user_balances = defaultdict(int)
         if data:
             # read in the data to create the blockchain
             for block in data:
                 self.add_block(block)
         else:
             # create a blockchain from scratch
-            self.block_chain.append(create_genesis())
-        # holds the balances of all users
-        self.user_balances = defaultdict(int)
+            self.block_chain.append(self.create_genesis())
 
     def create_genesis(self, data=None):
         '''
@@ -50,30 +49,23 @@ class BlockChain:
         if data:
             block["Transactions"] = data
         else:
-            with open("genesis.json") as j:
+            with open("genesis.json") as f:
                 block["Transactions"] = list(json.load(f).items())
         self.length = 1
         for T in block["Transactions"]:
             self.user_balances[T[0]] = int(T[1])
         # genisis can be any diffifulty as it does not need to be mined
         block["Hash"] = sha256(json.dumps(block).encode()).hexdigest()
-        return self.block_chain[0]
+        return block
 
-    def add_block(self, data):
+    def add_block(self, block):
         '''
-        Adds a dictionary of a block to the blockchain list
+        Adds a block item to the block chain list
         '''
-        if data["Block_Index"] == 0:
-            self.block_chain.append(create_genesis(data))
-            return self.block_chain[0]
-        block = Block(data["Block_Index"], data["Prev_Hash"], data["Miner_PK"])
         # add transcations
-        for T in data["transactions"]:
+        for T in block.transactions:
             self.user_balances[T["Recipient_Public_Key"]] += T["Amount"]
             self.user_balances[T["Sender_Public_Key"]] -= T["Amount"]
-            block.add_transaction(T)
-        block.hash          = data["Hash"]
-        block.nonde         = data["Nonce"]
         self.user_balances["Miner_PK"] += COINBASE
         self.block_chain.append(block)
         self.length += 1
@@ -136,6 +128,15 @@ class BlockChain:
                     return False
             prev_hash = block.hash
         return True
+
+    def __str__(self):
+        '''
+        Returns a string of the blockchain
+        '''
+        string = ""
+        for block in self.block_chain:
+            string += str(block)
+        return string
 
 class Block:
     def __init__(self, index, prev_hash, pk):
@@ -214,3 +215,6 @@ if __name__=="__main__":
     Some cases for testing
     '''
     block_chain = BlockChain()
+    block = Block(1, block_chain.block_chain[0]["Hash"], "Josh's PK")
+    block_chain.add_block(block)
+    print(block_chain)
