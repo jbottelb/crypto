@@ -16,6 +16,7 @@ from MessageTypes import MessageTypes
 from Utilities import Utilities
 import BlockChain
 import time
+from Constants import Constants
 
 ### TODO: TESTING ######
 START_TIME = {"start_time": 0}
@@ -24,14 +25,14 @@ FIRST_FINISHED = {"first": True}
 TRANSACTIONS = [{"test": "This is transaction 1 data"}, {"test": "This is transaction 2 data"}, {"test": "This is transaction 3 data"}]
 #####################33
 
-'''
-Handles behavior for different message types that a full node
-expects to receive. Ignores messages that are irrelevant to
-full nodes.
-Returns: nothing
-'''
-def handleMessage(sock: socket.socket, message: dict, neighbors: set, miners: set, 
+def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: set, 
                   blockchain: BlockChain.BlockChain, connections: dict):
+    '''
+    Handles behavior for different message types that a full node
+    expects to receive. Ignores messages that are irrelevant to
+    full nodes.
+    Returns: nothing
+    '''
     msgtype = message.get("Type", 0)
     if not msgtype:
         return
@@ -80,11 +81,20 @@ def handleMessage(sock: socket.socket, message: dict, neighbors: set, miners: se
     #       Right now, we are only handling messages needed to talk with miners.
 
 
+def ping_nodes(nodes: set):
+    '''
+    Pings the nodes specified in the provided set. If they aren't alive,
+    removes them from the set.
+    '''
+    for node in nodes:
+        rc = Utilities.pingNode(node)
+        if not rc:
+            nodes.discard(node)
 
 def main():
 
-    if len(sys.argv) < 2 or len(sys.argv) > 3:
-        print("Usage: FullNode.py <port> [<trusted_hostname:port>]")
+    if len(sys.argv) < 2 or len(sys.argv) > 4:
+        print("Usage: FullNode.py <port> [<trusted_hostname:port>]\n'-s' option to force seed behavior (i.e., generate a genesis block")
         exit(-1)
     
     port = int(sys.argv[1])
@@ -107,6 +117,9 @@ def main():
     pending_transactions = set()
     # personal copy of longest blockchain
     blockchain = BlockChain.BlockChain()
+    # create a genesis block if this node is to act as a seed node
+    if "-s" in sys.argv:
+        blockchain.create_genesis()
 
     # handle having a trusted host to start with (As a full node)
     if trusted_host is not None:
@@ -153,10 +166,18 @@ def main():
     # dict of socket connections
     connections = {main_sock: f"localhost:{port}"}
 
-    # TODO: last time we pinged neighbors <------------- PING NEIGHBORS (and miners) AND UPDATE THE SET OF THEM
-
+    first_ping = True
+    latest_ping = time.time()
 
     while 1:
+        # ping neighbor and miner nodes at the specified interval to determine which are active
+        if int(time.time() - latest_ping) > int(Constants.NEIGHBOR_PING_INTERVAL) or first_ping:
+            # remove nodes from the sets if they aren't active anymore
+            ping_nodes(neighbors)
+            ping_nodes(miners)
+            first_ping = False
+            latest_ping = time.time() 
+        
         # listen for a second for a readable socket
         readable, writeable, exceptional = select.select(connections.keys(), [], [], 1)
         for sock in readable:
@@ -174,7 +195,7 @@ def main():
                 # read from the socket
                 message = Utilities.readMessage(sock, connections)
                 if message is not None:
-                    handleMessage(sock, message, neighbors, miners, blockchain, connections)
+                    handle_message(sock, message, neighbors, miners, blockchain, connections)
         # handle any issues with sockets
         for sock in exceptional:
             if sock == main_sock:

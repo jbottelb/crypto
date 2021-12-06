@@ -12,3 +12,4 @@ class Constants():
     DIFFICULTY = 4 # number of leading zeros on computed hash
     COINBASE = 10 # reward for mining bloack (we do not support depreciation of value for mining blocks)
     TPB = 5 # number of transactions per block
+    NEIGHBOR_PING_INTERVAL = 30

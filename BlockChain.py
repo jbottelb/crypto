@@ -121,7 +121,7 @@ class BlockChain:
         Otherwise, create a block where data will be a list of
         genesis transactions (PK, balance)
 
-        Genisis persists as a dictionary, unlike other blocks
+        Genesis persists as a dictionary, unlike other blocks
         '''
         block = {}
         block["Block_Index"] = 0
