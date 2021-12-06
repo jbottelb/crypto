@@ -211,7 +211,7 @@ class Block:
         return block_str
 
 
-import Wallet
+from Wallet import Wallet
 from RSA_Keys import RSA_Keys as RK
 if __name__=="__main__":
     '''
@@ -225,4 +225,11 @@ if __name__=="__main__":
     print(block_chain.user_balances)
 
     John = Wallet(RK.generate_keys())
-    print(John.pk)
+    Mary = Wallet(RK.generate_keys())
+
+    block = Block(1, block_chain.block_chain[0]["Hash"], "Josh's PK")
+    for i in range(10):
+        block.add_transaction(Transaction(John.public_key, Mary.public_key, str(i)))
+    block_chain.add_block(block)
+    print(block_chain)
+    print(block_chain.user_balances)
