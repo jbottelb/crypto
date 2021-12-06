@@ -83,6 +83,7 @@ class BlockChain:
     def validate_block(self, block):
         '''
         Checks if the block can be validily added to the chain
+        checks the blocks transcations, hash, index, and previous hash
         '''
         pass
 
