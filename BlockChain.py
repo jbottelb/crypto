@@ -64,9 +64,9 @@ class BlockChain:
         '''
         # add transcations
         for T in block.transactions:
-            self.user_balances[T["Recipient_Public_Key"]] += T["Amount"]
-            self.user_balances[T["Sender_Public_Key"]] -= T["Amount"]
-        self.user_balances["Miner_PK"] += COINBASE
+            self.user_balances[T.recipient] += int(T.amount)
+            self.user_balances[T.sender] -= int(T.amount)
+        self.user_balances[block.miner_pk] += COINBASE
         self.block_chain.append(block)
         self.length += 1
         return block
@@ -210,11 +210,19 @@ class Block:
 
         return block_str
 
+
+import Wallet
+from RSA_Keys import RSA_Keys as RK
 if __name__=="__main__":
     '''
     Some cases for testing
     '''
     block_chain = BlockChain()
     block = Block(1, block_chain.block_chain[0]["Hash"], "Josh's PK")
+    block.add_transaction(Transaction("Josh's PK", "Brad's PK", "10"))
     block_chain.add_block(block)
     print(block_chain)
+    print(block_chain.user_balances)
+
+    John = Wallet(RK.generate_keys())
+    print(John.pk)
