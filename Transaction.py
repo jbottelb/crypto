@@ -45,12 +45,12 @@ class Transaction:
         Returns a json of the transaction
         '''
         j = {}
-        j["tid"] = str(self.tid)
-        j["sender"] = str(self.sender)
-        j["recipient"] = str(self.recipient)
-        j["amount"] = str(self.amount)
+        j["Transaction_ID"]         = str(self.tid)
+        j["Sender_Public_Key"]      = str(self.sender)
+        j["Recipient_Public_Key"]   = str(self.recipient)
+        j["Amount"]                 = str(self.amount)
         if self.signature and sig:
-            j["signature"] = str(self.signature)
+            j["Signature"] = str(self.signature)
         return j
 
     def to_string(self, sig=True):

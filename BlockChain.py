@@ -6,7 +6,9 @@ Includes functions for keeping track and communicating with other nodes.
 '''
 import random
 import json
+from hashlib import sha256
 from Transaction import Transaction
+from collections import defaultdict
 
 # transactions per block
 TPB = 5
@@ -32,7 +34,7 @@ class BlockChain:
             # create a blockchain from scratch
             self.block_chain.append(create_genesis())
         # holds the balances of all users
-        self.user_balances = None
+        self.user_balances = defaultdict(int)
 
     def create_genesis(self, data=None):
         '''
@@ -51,16 +53,26 @@ class BlockChain:
         self.length = 1
         for T in block["transactions"]:
             self.user_balances[T[0]] = int(T[1])
+        # genisis can be any diffifulty as it does not need to be mined
+        block["hash"] = sha256(json.dumps(block).encode()).hexdigest()
         return self.block_chain[0]
 
     def add_block(self, data):
         '''
-        Adds block to the blockchain list
+        Adds a dictionary of a block to the blockchain list
         '''
         if data["index"] == 0:
             self.block_chain.append(create_genesis(data))
             return self.block_chain[0]
         block = Block(data["Block_Index"], data["Prev_Hash"], data["Miner_PK"])
+        # add transcations
+        for T in data["transactions"]:
+            self.user_balances[T["Recipient_Public_Key"]] += T["Amount"]
+            self.user_balances[T["Sender_Public_Key"]] -= T["Amount"]
+            block.add_transaction(T)
+        block["Hash"]       = data["Hash"]
+        block["Nonce"]      = data["Nonce"]
+        self.user_balances["miner_pk"] += COINBASE
         self.block_chain.append(block)
         self.length += 1
         return block
@@ -70,17 +82,13 @@ class BlockChain:
         Check if the sender of the transcation can send the amount
         based off thier total in a blockchain
         '''
-        if not self.user_balances:
-            self.compute_user_balances()
-        if self.user_balances[T["sender"]] and self.user_balances[T["sender"]] < T["amount"]:
-            return True
-        return False
+        if self.user_balances[T["Sender_Public_Key"]] < T["Amount"]:
+            return False
+        return True
 
-    def validate_all_transactions(self):
+    def validate_block(self, block):
         '''
-        Check the running total of the entire blockchain for all public keys
-        to make sure all totals add up
-        This is a step in the verification process
+        Checks if the block can be validily added to the chain
         '''
         pass
 
@@ -88,20 +96,32 @@ class BlockChain:
         '''
         Gets the total balance of a user throught the blockchain
         '''
-        pass
-
-    def compute_user_balances(self):
-        '''
-        computes all the users balances across the blockchain
-        computationally expensive
-        '''
-        pass
+        return self.user_balances[pk]
 
     def verify_blockchain(self):
         '''
         Verifies entire blockchain
+
+        Genisis block is assumed valid excpet hash
         '''
-        pass
+        balances = defaultdict(int) # collect running balances for ordering
+        prev_hash = None
+        for block in self.block_chain:
+            if block["Block_Index"] == 0:
+                # check hash of the genesis
+
+                for T in block["transactions"]:
+                    balances[T[0]] = int(T[1])
+            else:
+                for T in block["Transactions"]:
+                    if not verify_transaction(T):
+                        return False
+                    balances[T["Recipient_Public_Key"]] += T["Amount"]
+                    balances[T["Sender_Public_Key"]] -= T["Amount"]
+
+            prev_hash = block["Hash"]
+        return True
+
 
 class Block:
     def __init__(self, index, prev_hash, pk):
@@ -129,28 +149,6 @@ class Block:
                 return False
         return True
 
-    def validate_block(self, balances=None):
-        '''
-        Do the process for validating the block
-
-        The balances arg is used if we are validating all blocks, and speeds
-        up the process so we do not need to check the transcations of every
-        previous block for every block
-        '''
-        if not balances:
-            balances = {}
-            # find the balances up to this block
-
-        # check prev hash
-
-        # check hash
-
-        # verify transactions
-
-        # validate transactions
-
-        return balances
-
     def to_string(self):
         '''
         Converts Block to json string
@@ -163,12 +161,12 @@ class Block:
         Converts Block to dictionary
         '''
         j = {}
-        j["index"]        = self.index
-        j["prev_hash"]    = self.prev_hash
-        j["miner_pk"]     = self.miner_pk
-        j["nonce"]        = self.nonce
-        j["transactions"] = self.transactions
-        j["hash"]         = self.hash
+        j["Blcok_Index"]        = self.index
+        j["Prev_Hash"]    = self.prev_hash
+        j["Miner_PK"]     = self.miner_pk
+        j["Nonce"]        = self.nonce
+        j["Transactions"] = self.transactions
+        j["Hash"]         = self.hash
         # stringify
         return j
 
