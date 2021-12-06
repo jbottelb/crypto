@@ -42,7 +42,7 @@ class Miner:
                 print("Should have gotten an affirmative join as miner response")
                 return 0
         return 1
-        
+
 
     def run(self, URL):
         parent = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

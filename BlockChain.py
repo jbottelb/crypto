@@ -16,19 +16,52 @@ DIFFICULTY = 4
 COINBASE = 10 # (we do not support depreciation of value for mining blocks)
 
 class BlockChain:
-    def __init__(self):
+    def __init__(self, data=None):
+        '''
+        If creating a blockchain for the first time, no data specified
+        Otherwise, data will be a json dictionary object that is a list
+        of all the blocks
+        '''
         self.block_chain = []
-        self.block_chain.append(create_genesis())
-        self.length = 1
-        # we may want to hold a copy of all  balances
+        self.length = 0
+        if data:
+            # read in the data to create the blockchain
+            for block in data:
+                self.add_block(block)
+        else:
+            # create a blockchain from scratch
+            self.block_chain.append(create_genesis())
+        # we may want to hold a copy of all balances
+        # key pair of public key, balance
         self.user_balances = None
 
-    def create_genesis():
+    def create_genesis(data=None):
         '''
         Import a genesis text file, if it exists
-        Otherwise, do some simple block creation
+        Otherwise, do some simple block creation, data will be a list of
+        genesis transactions (PK, balance)
         '''
-        return None
+        block = {}
+        block["Block_Index"] = 0
+        block["transactions"] = []
+        if data:
+            block["transactions"] = data
+        else:
+            with open("genesis.json") as j:
+                block["transactions"] = list(json.load(f).items())
+        return self.block_chain[0]
+
+    def add_block(self, data):
+        '''
+        Adds block to the blockchain list
+        '''
+        if data["index"] == 0:
+            self.block_chain.append(create_genesis(data))
+            return self.block_chain[0]
+        block = Block(data["Block_Index"], data["Prev_Hash"], data["Miner_PK"])
+        self.block_chain.append(block)
+        self.length += 1
+        return block
 
     def validate_transaction(self, T):
         '''
