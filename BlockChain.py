@@ -41,27 +41,29 @@ class BlockChain:
         Import a genesis text file, if it exists
         Otherwise, do some simple block creation, data will be a list of
         genesis transactions (PK, balance)
+
+        Genisis persists as a dictionary, unlike other blocks
         '''
         block = {}
         block["Block_Index"] = 0
-        block["transactions"] = []
+        block["Transactions"] = []
         if data:
-            block["transactions"] = data
+            block["Transactions"] = data
         else:
             with open("genesis.json") as j:
-                block["transactions"] = list(json.load(f).items())
+                block["Transactions"] = list(json.load(f).items())
         self.length = 1
-        for T in block["transactions"]:
+        for T in block["Transactions"]:
             self.user_balances[T[0]] = int(T[1])
         # genisis can be any diffifulty as it does not need to be mined
-        block["hash"] = sha256(json.dumps(block).encode()).hexdigest()
+        block["Hash"] = sha256(json.dumps(block).encode()).hexdigest()
         return self.block_chain[0]
 
     def add_block(self, data):
         '''
         Adds a dictionary of a block to the blockchain list
         '''
-        if data["index"] == 0:
+        if data["Block_Index"] == 0:
             self.block_chain.append(create_genesis(data))
             return self.block_chain[0]
         block = Block(data["Block_Index"], data["Prev_Hash"], data["Miner_PK"])
@@ -70,9 +72,9 @@ class BlockChain:
             self.user_balances[T["Recipient_Public_Key"]] += T["Amount"]
             self.user_balances[T["Sender_Public_Key"]] -= T["Amount"]
             block.add_transaction(T)
-        block["Hash"]       = data["Hash"]
-        block["Nonce"]      = data["Nonce"]
-        self.user_balances["miner_pk"] += COINBASE
+        block.hash          = data["Hash"]
+        block.nonde         = data["Nonce"]
+        self.user_balances["Miner_PK"] += COINBASE
         self.block_chain.append(block)
         self.length += 1
         return block
@@ -107,21 +109,33 @@ class BlockChain:
         balances = defaultdict(int) # collect running balances for ordering
         prev_hash = None
         for block in self.block_chain:
-            if block["Block_Index"] == 0:
+            if block.index == 0:
                 # check hash of the genesis
-
-                for T in block["transactions"]:
+                to_hash = block
+                del to_hash["Hash"]
+                hash = sha256(json.dumps(to_hash).encode()).hexdigest()
+                if not hash == block["Hash"]:
+                    return False
+                for T in block["Transactions"]:
                     balances[T[0]] = int(T[1])
             else:
-                for T in block["Transactions"]:
-                    if not verify_transaction(T):
+                if not block.hash == prev_hash:
+                    return False
+                if not block.hash.startswith(DIFFICULTY * "0"):
+                    return False
+                balances[block.miner_pk] += COINBASE
+                for T in block.transactions:
+                    if not T.verify_transaction():
                         return False
-                    balances[T["Recipient_Public_Key"]] += T["Amount"]
-                    balances[T["Sender_Public_Key"]] -= T["Amount"]
-
-            prev_hash = block["Hash"]
+                    if balances[T.sender] < T.amount:
+                        return False
+                    balances[T.recipient] += T.amount
+                    balances[T.sender]    -= T.aomunt
+                hash = sha256(block.string_for_mining().encode()).hexdigest()
+                if hash != block.hash:
+                    return False
+            prev_hash = block.hash
         return True
-
 
 class Block:
     def __init__(self, index, prev_hash, pk):
@@ -143,7 +157,7 @@ class Block:
         (it is quicker to just do that when we validate the block)
         '''
         for t in self.transcations:
-            if not Transaction.verify_transaction(t):
+            if not t.verify_transaction():
                 if send_bad_transaction:
                     return t
                 return False
@@ -194,3 +208,9 @@ class Block:
             block_str += str(t) + "\n"
 
         return block_str
+
+if __name__=="__main__":
+    '''
+    Some cases for testing
+    '''
+    block_chain = BlockChain()
