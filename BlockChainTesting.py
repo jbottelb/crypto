@@ -20,10 +20,12 @@ if __name__=="__main__":
 
     Josh = Wallet(wallets["Josh"])
     Brad = Wallet(wallets["Brad"])
+    John = Wallet(wallets["John"])
+    Mary = Wallet(wallets["Mary"])
 
     block_chain = BlockChain()
     block = Block(1, block_chain.block_chain[0]["Hash"], wallets["Josh"][0])
-    T = Transaction.generate_transaction(Josh, 10, Brad.public_key)
+    T = Transaction.generate_transaction(Josh, 100, Brad.public_key)
     block.add_transaction(T)
 
     miner = Miner(wallets["Josh"][0])
@@ -31,7 +33,20 @@ if __name__=="__main__":
     miner.mine()
     block = miner.block
 
-    print(block_chain.validate_block(block))
+    if block_chain.validate_block(block):
+        block_chain.add_block(block)
 
-    block_chain.add_block(block)
-    print(block_chain)
+    block = Block(2, block_chain.block_chain[1].hash, wallets["Josh"][0])
+    for i in range(10):
+        T = Transaction.generate_transaction(John, i, Mary.public_key)
+        block.add_transaction(T)
+
+    miner.block = block
+    miner.mine()
+    block = miner.block
+
+    if block_chain.validate_block(block):
+        block_chain.add_block(block)
+
+    if block_chain.verify_blockchain():
+        print("Block chained")

@@ -47,7 +47,9 @@ class Block:
         for the transaction amounts
         '''
         for t in self.transactions:
-            if user_balances[t.sender] > t.amount:
+            print(user_balances)
+            print(str(t.sender))
+            if user_balances[t.sender] < t.amount:
                 return False
         return True
 
