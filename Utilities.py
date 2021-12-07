@@ -16,6 +16,7 @@ from BlockChain import BlockChain, Block
 from MessageTypes import MessageTypes
 from Constants import Constants
 from Transaction import Transaction
+from BlockChainCollection import BlockChainCollection
 
 class Utilities:
 
@@ -437,7 +438,6 @@ class Utilities:
             return None
         return temp_txn
 
-
     @staticmethod
     def getBlockchain(neighbor: tuple) -> BlockChain:
         '''
@@ -459,6 +459,7 @@ class Utilities:
         if response is None:
             # issue with response from neighbor
             return None
+        # first, handle the genesis block
         elif response.get("Type", "") == MessageTypes.Get_Blockchain_Response:
             block_index = response["Block_Index"]
             transactions_dicts = message["Transactions"]
@@ -480,13 +481,21 @@ class Utilities:
                                 "Transactions": transaction_objects,
                                 "Hash": hash}
                 blocks.append(genesis_dict)
+        expected_number_of_blocks = blocks_left_to_come + 1
         # we have the genesis block, now get the remaining normal blocks
-        for i in range(1, blocks_left_to_come):
+        while blocks_left_to_come:
             response = Utilities.readMessage(sock)
             if response is None:
                 # issue getting one of the blocks from neighbor
                 return None
             block_index = response["Block_Index"]
+            blocks_left_to_come = response["Blocks_Left_To_Come"]
+            if blocks_left_to_come != expected_number_of_blocks - len(blocks) - 1:
+                # block with invalid index received
+                return None
+            if expected_number_of_blocks - blocks_left_to_come - 1 != block_index:
+                # block with invalid index received
+                return None
             transactions_dicts = message["Transactions"]
             transaction_objects = []
             # convert transaction dictionaries to transaction objects
@@ -496,15 +505,22 @@ class Utilities:
                     # invalid transaction in block -> bad blockchain
                     return None
                 transaction_objects.append(txn_object)
-            hash = message.get("Hash")
+            hash = response["Hash"]
             miner_pk = response["Miner_PK"]
             prev_hash = response["Prev_Hash"]
             nonce = response["Nonce"]
-            blocks_left_to_come = response["Blocks_Left_To_Come"]
-            temp_block = Block(block_index, prev_hash, miner_pk)
-            # add transactions to the temp block
-            for txn_object in transaction_objects:
-                temp_block.add_transaction(txn_object)
+            temp_block = Block(block_index, prev_hash, miner_pk, nonce, transaction_objects, hash)
+            # store block in list of blocks
+            blocks.append(temp_block)
+        
+        if len(blocks) != expected_number_of_blocks:
+            return None
+        temp_blockchain = BlockChain(blocks)
+        if not temp_blockchain.verify_blockchain():
+            # invalid blockchain
+            return None
+        return temp_blockchain
+
             
 
 

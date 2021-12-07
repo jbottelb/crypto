@@ -124,7 +124,7 @@ class BlockChain:
             # create a blockchain from scratch
             self.add_block(self.create_genesis(), True)
 
-    def create_genesis(self, data=None):
+    def create_genesis(self, data=None) -> dict:
         '''
         Import a genesis text file, if it exists
         Otherwise, create a block where data will be a list of
@@ -148,17 +148,17 @@ class BlockChain:
         block["Hash"] = sha256(json.dumps(block).encode()).hexdigest()
         return block
 
-    def add_block(self, block, genesis=False):
+    def add_block(self, block, genesis=False) -> bool:
         '''
         Adds a block item to the block chain list.
         Block should be a block object unless genesis is True,
         in which case block should be a dictionary.
-        Returns: 1 on success, 0 on failure
+        Returns: True on success, False on failure
         '''
         if type(block) == dict and genesis == False:
-            return 0
+            return False
         elif type(block) == Block and genesis == True:
-            return 0
+            return False
         # add transcations
         if genesis == True:
             for T in block["Transactions"]:
@@ -170,7 +170,7 @@ class BlockChain:
         self.user_balances[block.miner_pk] += Constants.COINBASE
         self.block_chain.append(block)
         self.length += 1
-        return 1
+        return True
 
     def validate_transaction(self, T: Transaction):
         '''
@@ -181,7 +181,7 @@ class BlockChain:
             return False
         return True
 
-    def validate_block(self, block: Block):
+    def validate_block(self, block: Block) -> bool:
         '''
         Checks if the block is valid and can be added to the chain.
         Checks the block's transcations, hash, index, and previous hash
@@ -213,24 +213,23 @@ class BlockChain:
         return True
 
 
-    def get_pk_total(self, pk):
+    def get_pk_total(self, pk) -> defaultdict:
         '''
         Gets the total balance of a user throught the blockchain
         '''
         return self.user_balances[pk]
 
-    def verify_blockchain(self):
+    def verify_blockchain(self) -> bool:
         '''
-        Verifies entire blockchain
-
-        Genisis block is assumed valid except hash
+        Verifies entire blockchain. Genesis block is assumed valid 
+        except hash.
         '''
         balances = defaultdict(int) # collect running balances for ordering
         prev_hash = None
         for block in self.block_chain:
             if isinstance(block, dict):
                 # check hash of the genesis
-                to_hash = block.copy() # that was a nasty bug
+                to_hash = block.copy()
                 del to_hash["Hash"]
                 hash = sha256(json.dumps(to_hash).encode()).hexdigest()
                 if not hash == block["Hash"]:

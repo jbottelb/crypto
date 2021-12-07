@@ -154,7 +154,8 @@ def main():
         longest_bc = None
         tied_length_blockchains = []
         for n in neighbors:
-            bc = Utilities.getBlockchain(n) # TODO:
+            # TODO: check if this is working
+            bc = Utilities.getBlockchain(n)
             if not bc:
                 continue
             if len(bc.block_chain) > longest_bc:
