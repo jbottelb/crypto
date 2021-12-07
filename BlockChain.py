@@ -108,10 +108,10 @@ class Block:
         return block_str
 
 class BlockChain:
-    def __init__(self, data=None):
+    def __init__(self, data:list=None):
         '''
         If creating a blockchain for the first time, don't specify data.
-        If using existing blocks, data will be a list of blocks as dicts.
+        If using existing blocks, data will be a list of blocks as Block objects.
         '''
         self.block_chain = []
         self.length = 0
@@ -122,7 +122,7 @@ class BlockChain:
                 self.add_block(block)
         else:
             # create a blockchain from scratch
-            self.block_chain.append(self.create_genesis())
+            self.add_block(self.create_genesis(), True)
 
     def create_genesis(self, data=None):
         '''
@@ -148,10 +148,17 @@ class BlockChain:
         block["Hash"] = sha256(json.dumps(block).encode()).hexdigest()
         return block
 
-    def add_block(self, block: Block, genesis=False):
+    def add_block(self, block, genesis=False):
         '''
-        Adds a block item to the block chain list
+        Adds a block item to the block chain list.
+        Block should be a block object unless genesis is True,
+        in which case block should be a dictionary.
+        Returns: 1 on success, 0 on failure
         '''
+        if type(block) == dict and genesis == False:
+            return 0
+        elif type(block) == Block and genesis == True:
+            return 0
         # add transcations
         if genesis == True:
             for T in block["Transactions"]:
@@ -163,7 +170,7 @@ class BlockChain:
         self.user_balances[block.miner_pk] += Constants.COINBASE
         self.block_chain.append(block)
         self.length += 1
-        return block
+        return 1
 
     def validate_transaction(self, T: Transaction):
         '''
@@ -251,7 +258,6 @@ class BlockChain:
                     balances[T.sender]    -= T.amount
                 hash = sha256(block.string_for_mining().encode()).hexdigest()
                 if hash != block.hash:
-                    print("owo uh oh the hashie washie went oppsie whoopsie owo")
                     return False
                 prev_hash = block.hash
         return True
