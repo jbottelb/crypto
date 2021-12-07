@@ -29,5 +29,9 @@ if __name__=="__main__":
     miner = Miner(wallets["Josh"][0])
     miner.block = block
     miner.mine()
-    block = miner.block()
-    print(block)
+    block = miner.block
+
+    print(block_chain.validate_block(block))
+
+    block_chain.add_block(block)
+    print(block_chain)

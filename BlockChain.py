@@ -33,7 +33,7 @@ class Block:
         DOES NOT CHECK IF THE SENDER CAN SEND THE BALANCE
         (it is quicker to just do that when we validate the block)
         '''
-        for t in self.transcations:
+        for t in self.transactions:
             if not t.verify_transaction_authenticity():
                 if send_bad_transaction:
                     return t
@@ -47,10 +47,9 @@ class Block:
         for the transaction amounts
         '''
         for t in self.transactions:
-            if user_balances[t.sender] < t.amount:
+            if user_balances[t.sender] > t.amount:
                 return False
         return True
-
 
     def to_string(self):
         '''
@@ -68,7 +67,9 @@ class Block:
         j["Prev_Hash"]    = self.prev_hash
         j["Miner_PK"]     = self.miner_pk
         j["Nonce"]        = self.nonce
-        j["Transactions"] = self.transactions
+        j["Transactions"] = []
+        for t in self.transactions:
+            j["Transactions"].append(str(t))
         j["Hash"]         = self.hash
         return j
 
@@ -78,7 +79,7 @@ class Block:
         block_str += "Prev Hash: " + str(self.prev_hash) + "\n"
         block_str += "Nonce: " + str(self.nonce) + "\n"
         block_str += "Coinbase: " + str(Constants.COINBASE) + " -> " + str(self.miner_pk) + "\n"
-        block_str += "Transactions"
+        block_str += "Transactions\n"
         for t in self.transactions:
             block_str += str(t) + "\n"
         if self.hash:
@@ -91,7 +92,7 @@ class Block:
         block_str += "Prev Hash: " + str(self.prev_hash) + "\n"
         block_str += "Nonce: " + str(self.nonce) + "\n"
         block_str += "Coinbase: " + str(Constants.COINBASE) + " -> " + str(self.miner_pk) + "\n"
-        block_str += "Transactions"
+        block_str += "Transactions\n"
         for t in self.transactions:
             block_str += str(t) + "\n"
 
@@ -171,7 +172,7 @@ class BlockChain:
         '''
         if not block.verify_transaction_authenticities():
             return False
-        if not block.verify_transactions_are_fundable():
+        if not block.verify_transactions_are_fundable(self.user_balances):
             return False
         # index (which started at zero) of a new block should be the
         # same value as the current length of the chain
@@ -187,7 +188,11 @@ class BlockChain:
             return False
         # the previous hash must be the hash of the current last block
         # in the blockchain
-        if block.prev_hash != self.block_chain[-1].hash:
+        if block.index-1 == 0:
+            # stupid genesis
+            if block.prev_hash != self.block_chain[block.index-1]["Hash"]:
+                return False
+        elif block.prev_hash != self.block_chain[block.index-1].hash:
             return False
         return True
 
@@ -246,7 +251,7 @@ class BlockChain:
         '''
         string = ""
         for block in self.block_chain:
-            string += str(block)
+            string += str(block) + "\n\n"
         return string
 
 
