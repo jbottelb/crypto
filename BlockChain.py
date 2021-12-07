@@ -250,22 +250,8 @@ class BlockChain:
         return string
 
 
-from Wallet import Wallet
-from RSA_Keys import RSA_Keys as RK
 if __name__=="__main__":
     '''
     Some cases for testing
     '''
-    with open("wallets.json") as f:
-        wallets = json.load(f)
-
-    print(wallets["Josh"][0])
-    #Josh = Wallet(wallets["Josh"])
-    #Brad = Wallet(wallets["Brad"])
-    Josh = Wallet(RK.generate_keys())
-    Brad = Wallet(RK.generate_keys())
-
-    block_chain = BlockChain()
-    block = Block(1, block_chain.block_chain[0]["Hash"], wallets["Josh"][0])
-
-    Transaction.generate_transaction(Josh, 10, Brad.public_key)
+    print("Test cases in BlockChainTesting")

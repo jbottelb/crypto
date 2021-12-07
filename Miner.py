@@ -3,7 +3,8 @@
 Implementation of a miner node
 '''
 
-from BlockChain import DIFFICULTY, Block
+from Constants import Constants
+from BlockChain import Block
 from hashlib import sha256
 from Utilities import Utilities
 import select
@@ -19,7 +20,7 @@ class Miner:
         self.Node = None
         self.block = None
         self.pk = pk
-        self.difficulty = DIFFICULTY
+        self.difficulty = Constants.DIFFICULTY
 
     # this is here for testing purposes
     def override_difficulty(self, d):
@@ -79,8 +80,8 @@ class Miner:
                     block = None
             elif hash:
                 # We found a hash before receiving a new block to mine; send back block
-                message = {"Type": MessageTypes.Send_Block, "Block_Index": block.index, "Miner_PK": self.pk, 
-                            "Prev_Hash": block.prev_hash, "Nonce": block.nonce, "Hash": block.hash, 
+                message = {"Type": MessageTypes.Send_Block, "Block_Index": block.index, "Miner_PK": self.pk,
+                            "Prev_Hash": block.prev_hash, "Nonce": block.nonce, "Hash": block.hash,
                             "Transactions": block.transactions, "Previous_Message_Recipients": []}
                 print(f"Message from miner to parent full node after finding a block: \n{message}")
                 Utilities.sendMessage(message, True, None, parent)
