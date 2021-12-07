@@ -65,6 +65,12 @@ class Transaction:
         '''
         return json.dumps(self.to_json(sig))
 
+    def __str__(self, sig=True):
+        '''
+        Makes the json of the transcation a string
+        '''
+        return json.dumps(self.to_json(sig))
+
 if __name__=="__main__":
     # Testing
     w1 = Wallet(RK.generate_keys())
