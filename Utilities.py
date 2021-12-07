@@ -12,6 +12,7 @@ and receiving different types of messages.
 import socket
 import json
 import http.client
+from BlockChain import BlockChain, Block
 from MessageTypes import MessageTypes
 from Constants import Constants
 
@@ -181,10 +182,26 @@ class Utilities:
             return True
         
         elif msgtype == MessageTypes.Get_Blockchain_Response:
-            if len(message.keys()) != 7:
+            if len(message.keys()) != 8:
                 return False
             block_index = message.get("Block_Index", -1)
             if block_index == -1 or type(block_index) != int:
+                return False
+            if block_index == 0:
+                # genesis block, only perform some of the checks
+                transactions = message.get("Transactions", None)
+                if transactions is None or type(transactions) != list:
+                    return False
+                hash = message.get("Hash", 0)
+                if not hash or type(hash) != str:
+                    return False
+                blocks_left = message.get("Blocks_Left_To_Come", -1)
+                if blocks_left == -1 or type(blocks_left) != int:
+                    return False
+                # valid genesis block
+                return True
+            miner_pk = message.get("Miner_PK", 0)
+            if not miner_pk or type(miner_pk) != str:
                 return False
             prev_hash = message.get("Prev_Hash", 0)
             if not prev_hash or type(prev_hash) != str:
@@ -370,7 +387,7 @@ class Utilities:
         a connections dict for the socket to be added to.
         Returns: 1 if successful, 0 otherwise
         '''
-        if keepSocketOpen and not socket and not connections:
+        if keepSocketOpen and not sock and not connections:
             # must provide a connections dict if a new socket is to be kept open for future use
             return 0
         newSock = False
@@ -404,10 +421,61 @@ class Utilities:
         return 1
     
     @staticmethod
-    def getBlockchain(neighbor: tuple):
-         '''
-        Gets an entire blockchain from a neighbor
+    def getBlockchain(neighbor: tuple) -> BlockChain:
         '''
+        Gets an entire blockchain from a specified neighbor and
+        validates it.
+        Returns: a BlockChain object if successful, None otherwise
+        '''
+        blocks = []
+        message = {"Type": MessageTypes.Get_Blockchain}
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        rc = Utilities.sendMessage(message, True, neighbor, sock, dict())
+        if not rc:
+            # issue sending message
+            return None
+        # now read responses from the neighbor, each response should
+        # contain a block and the number of remaining of blocks to expect
+        sock.settimeout(5)
+        response = Utilities.readMessage(sock)
+        if response is None:
+            # issue with response from neighbor
+            return None
+        elif response.get("Type", "") == MessageTypes.Get_Blockchain_Response:
+            block_index = response["Block_Index"]
+            transactions = message["Transactions"]
+            hash = message["Hash"]
+            blocks_left_to_come = message["Blocks_Left_To_Come"]
+            if block_index != 0:
+                # incorrect order
+                return None
+            else:
+                # genesis block
+                genesis_dict = {"Block_Index": block_index,
+                                "Transactions": transactions,
+                                "Hash": hash}
+                blocks.append(genesis_dict)
+        # we have the genesis block, now get the remaining normal blocks
+        for i in range(1, blocks_left_to_come):
+            response = Utilities.readMessage(sock)
+            if response is None:
+                # issue getting one of the blocks from neighbor
+                return None
+            block_index = response["Block_Index"]
+            transactions = message["Transactions"]
+            hash = message.get("Hash")
+            miner_pk = response["Miner_PK"]
+            prev_hash = response["Prev_Hash"]
+            nonce = response["Nonce"]
+            blocks_left_to_come = response["Blocks_Left_To_Come"]
+            temp_block = Block()
+            
+
+
+
+
+
+
         
 
     

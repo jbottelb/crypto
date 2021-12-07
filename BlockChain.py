@@ -138,11 +138,15 @@ class BlockChain:
         block["Hash"] = sha256(json.dumps(block).encode()).hexdigest()
         return block
 
-    def add_block(self, block: Block):
+    def add_block(self, block: Block, genesis=False):
         '''
         Adds a block item to the block chain list
         '''
         # add transcations
+        if genesis == True:
+            for T in block["Transactions"]:
+                self.user_balances[T.recipient] += int(T.amount)
+                self.user_balances[T.sender] -= int(T.amount)
         for T in block.transactions:
             self.user_balances[T.recipient] += int(T.amount)
             self.user_balances[T.sender] -= int(T.amount)
@@ -173,7 +177,7 @@ class BlockChain:
         # same value as the current length of the chain
         if block.index != self.length:
             return False
-        hash = sha256(block.block.string_for_mining().encode()).hexdigest()
+        hash = sha256(block.string_for_mining().encode()).hexdigest()
         # the hash we get from the block's string representation should
         # match the hash that is included in the block itself
         if hash != block.hash:
