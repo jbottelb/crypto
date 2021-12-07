@@ -166,12 +166,13 @@ class BlockChain:
                 self.user_balances[T.recipient] += int(T.amount)
                 self.user_balances[T.sender] -= int(T.amount)
                 self.accepted_transactions.add(T.tid)
-        for T in block.transactions:
-            self.user_balances[T.recipient] += int(T.amount)
-            self.user_balances[T.sender] -= int(T.amount)
-            self.accepted_transactions.add(T.tid)
-        self.user_balances[block.miner_pk] += Constants.COINBASE
-        self.block_chain.append(block)
+        else:
+            for T in block.transactions:
+                self.user_balances[T.recipient] += int(T.amount)
+                self.user_balances[T.sender] -= int(T.amount)
+                self.accepted_transactions.add(T.tid)
+            self.user_balances[block.miner_pk] += Constants.COINBASE
+        self.block_chain.append(block.copy())
         self.length += 1
         return True
 

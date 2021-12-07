@@ -11,7 +11,7 @@ class Constants():
     COINBASE = 10 # reward for mining bloack (we do not support depreciation of value for mining blocks)
     TPB = 5 # number of transactions per block
     NEIGHBOR_PING_INTERVAL = 30
-    # if a side fork blockchain falls behind the main branch by this amount, it will be discarded
+    BLOCKCHAIN_FORK_PRUNING_INTERVAL = 30 # how often we prune short forks
+    # if a side fork blockchain falls behind the main branch by this amount, it will be
+    # discarded the next time we run a pruning function
     SIDE_BLOCKCHAIN_DIFFERENCE_FOR_PRUNING = 3
-    # how far back we allow new blocks to add onto a block in an existing fork and create a new fork
-    MAX_NEW_BLOCK_INDEX_LAG = 3
