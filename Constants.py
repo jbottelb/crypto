@@ -1,5 +1,3 @@
-from BlockChain import DIFFICULTY
-
 
 class Constants():
     # We use a large buffer size of 256 Kb so that
