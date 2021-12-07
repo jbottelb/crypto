@@ -15,6 +15,7 @@ import http.client
 from BlockChain import BlockChain, Block
 from MessageTypes import MessageTypes
 from Constants import Constants
+from Transaction import Transaction
 
 class Utilities:
 
@@ -421,6 +422,23 @@ class Utilities:
         return 1
     
     @staticmethod
+    def transactionDictToObject(txn_dict: dict) -> Transaction:
+        '''
+        Takes in a dictionary of transaction data and returns a
+        Transaction object with that data (or None if error occurs)
+        '''
+        try:
+            temp_txn = Transaction(txn_dict["Sender_Public_Key"], 
+                                   txn_dict["Recipient_Public_Key"],
+                                   txn_dict["Amount"],
+                                   txn_dict["Transaction_ID"],
+                                   txn_dict["Signature"])
+        except:
+            return None
+        return temp_txn
+
+
+    @staticmethod
     def getBlockchain(neighbor: tuple) -> BlockChain:
         '''
         Gets an entire blockchain from a specified neighbor and
@@ -443,7 +461,14 @@ class Utilities:
             return None
         elif response.get("Type", "") == MessageTypes.Get_Blockchain_Response:
             block_index = response["Block_Index"]
-            transactions = message["Transactions"]
+            transactions_dicts = message["Transactions"]
+            transaction_objects = []
+            for txn in transactions_dicts:
+                txn_object = Utilities.transactionDictToObject(txn)
+                if txn_object is None:
+                    # invalid transaction in block -> bad blockchain
+                    return None
+                transaction_objects.append(txn_object)
             hash = message["Hash"]
             blocks_left_to_come = message["Blocks_Left_To_Come"]
             if block_index != 0:
@@ -452,7 +477,7 @@ class Utilities:
             else:
                 # genesis block
                 genesis_dict = {"Block_Index": block_index,
-                                "Transactions": transactions,
+                                "Transactions": transaction_objects,
                                 "Hash": hash}
                 blocks.append(genesis_dict)
         # we have the genesis block, now get the remaining normal blocks
@@ -462,13 +487,24 @@ class Utilities:
                 # issue getting one of the blocks from neighbor
                 return None
             block_index = response["Block_Index"]
-            transactions = message["Transactions"]
+            transactions_dicts = message["Transactions"]
+            transaction_objects = []
+            # convert transaction dictionaries to transaction objects
+            for txn in transactions_dicts:
+                txn_object = Utilities.transactionDictToObject(txn)
+                if txn_object is None:
+                    # invalid transaction in block -> bad blockchain
+                    return None
+                transaction_objects.append(txn_object)
             hash = message.get("Hash")
             miner_pk = response["Miner_PK"]
             prev_hash = response["Prev_Hash"]
             nonce = response["Nonce"]
             blocks_left_to_come = response["Blocks_Left_To_Come"]
-            temp_block = Block()
+            temp_block = Block(block_index, prev_hash, miner_pk)
+            # add transactions to the temp block
+            for txn_object in transaction_objects:
+                temp_block.add_transaction(txn_object)
             
 
 

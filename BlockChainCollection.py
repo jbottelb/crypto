@@ -41,7 +41,7 @@ class BlockChainCollection:
         '''
         Adds a BlockChain object to the dictionary of blockchain forks.
         Especially useful when initializing a BlockChainCollection object
-        with an existing BlockChain object.
+        with potentially multiple existing BlockChain forks.
         Returns: 1 if the bc_fork did not become the main fork, 2 if
         bc_fork became the main fork
         '''
