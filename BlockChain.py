@@ -47,8 +47,6 @@ class Block:
         for the transaction amounts
         '''
         for t in self.transactions:
-            print(user_balances)
-            print(str(t.sender))
             if user_balances[t.sender] < t.amount:
                 return False
         return True
@@ -236,7 +234,7 @@ class BlockChain:
                     if not T.verify_transaction_authenticity():
                         # transaction was not authentic
                         return False
-                    if balances[T.sender] > T.amount:
+                    if balances[T.sender] < T.amount:
                         # sender did not have large enough balance for the transaction
                         return False
                     # update balances for sender and recipient

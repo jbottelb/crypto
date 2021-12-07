@@ -49,4 +49,7 @@ if __name__=="__main__":
         block_chain.add_block(block)
 
     if block_chain.verify_blockchain():
-        print("Block chained")
+        print(block_chain.get_pk_total(Josh.public_key))
+        print(block_chain.get_pk_total(Brad.public_key))
+        print(block_chain.get_pk_total(Mary.public_key))
+        print(block_chain.get_pk_total(John.public_key))
