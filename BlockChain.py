@@ -15,13 +15,22 @@ from collections import defaultdict
 from Constants import Constants
 
 class Block:
-    def __init__(self, index, prev_hash, pk):
+    def __init__(self, index, prev_hash, pk, nonce=None, transactions=None, hash=None):
         self.index = index
         self.prev_hash = prev_hash
         self.miner_pk = pk
-        self.nonce = random.randint(0, Constants.DIFFICULTY * 100000000)
-        self.transactions = []
-        self.hash = None
+        if nonce:
+            self.nonce = nonce
+        else:
+            self.nonce = random.randint(0, Constants.DIFFICULTY * 100000000)
+        if transactions:
+            self.transactions = transactions
+        else:
+            self.transactions = []
+        if hash:
+            self.hash = hash
+        else:
+            self.hash = None
 
     def add_transaction(self, transaction):
         self.transactions.append(transaction)
