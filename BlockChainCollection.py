@@ -16,6 +16,7 @@ state of that fork)
 
 from BlockChain import Block, BlockChain
 from Transaction import Transaction
+from Constants import Constants
 
 class BlockChainCollection:
 
@@ -28,7 +29,7 @@ class BlockChainCollection:
         '''
         Attempts to add a block to any of the existing forks.
         Adds a block to the set of orphan_blocks if it fails.
-        Makes a side fork the main fork if adding the block to
+        Makes a side fork into the main fork if adding the block to
         the side fork makes it longer than the main fork (and 
         manages/updates the set of pending transactions accordingly).
         Returns: 0 if block is an orphan, 1 if block was added to
@@ -36,6 +37,48 @@ class BlockChainCollection:
         did not become longer than the main branch, and 2 if block was 
         added to a side branch that became the main branch as a result
         '''
+
+        # look at the final hashes of our current blockchain forks, check if
+        # the block can be added to the end of any of them
+        for final_hash in self.blockchain_forks.keys():
+            if block.prev_hash == final_hash:
+                # block fits onto the end of a fork, try to add it
+                if self.blockchain_forks[final_hash].validate_block(block):
+                    self.blockchain_forks[final_hash].add_block(block)
+                    # if it's the main fork, remove transactions from pending_transactions
+                    # (don't remove pending_transactions when adding to a side fork)
+                    if final_hash == self.main_blockchain.block_chain[-1].hash:
+                        for txn in block.transactions:
+                            pending_transactions.discard(txn.tid)
+                    # we've added the block, we can move on
+                    continue
+        
+        # Perhaps the block doesn't fit onto the end of a fork, but rather appends
+        # to a block that is now buried in one of the forks. If that block is not
+        # too far back, we can make a new fork that ends with that block and then
+        # the incoming block. It will be shorter than the main branch, so it may be
+        # pruned quickly as other forks grow.
+        bc_forks = [item[1] for item in self.blockchain_forks.items()]
+        for bc_fork in bc_forks:
+            for hash in bc_fork.block_chain[:-Constants.MAX_NEW_BLOCK_INDEX_LAG:-2]:
+                if hash == block.hash:
+                    # new block adds onto a buried block, create a new BlockChain fork
+                    # at that buried block, append the new block, and add this new fork
+                    # to self.blockchain_forks
+                    new_fork = bc_fork.copy()
+                        new_fork.block_chain = new_fork.block_chain[#TODO:]
+
+                    
+        
+
+
+        # prune side branches that are far behind
+        for bc_fork in self.blockchain_forks.items():
+            if self.main_blockchain.length - bc_fork[1].length >= Constants.SIDE_BLOCKCHAIN_DIFFERENCE_FOR_PRUNING:
+                # side branch is too far behind, discard it
+                del self.blockchain_forks[bc_fork[0]]
+
+
     
     def add_blockchain_fork(self, bc_fork: BlockChain):
         '''

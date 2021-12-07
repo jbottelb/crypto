@@ -115,6 +115,7 @@ class BlockChain:
         '''
         self.block_chain = []
         self.length = 0
+        self.accepted_transactions = set()
         self.user_balances = defaultdict(int)
         if data:
             # read in the data to create the blockchain
@@ -164,9 +165,11 @@ class BlockChain:
             for T in block["Transactions"]:
                 self.user_balances[T.recipient] += int(T.amount)
                 self.user_balances[T.sender] -= int(T.amount)
+                self.accepted_transactions.add(T.tid)
         for T in block.transactions:
             self.user_balances[T.recipient] += int(T.amount)
             self.user_balances[T.sender] -= int(T.amount)
+            self.accepted_transactions.add(T.tid)
         self.user_balances[block.miner_pk] += Constants.COINBASE
         self.block_chain.append(block)
         self.length += 1
@@ -190,6 +193,19 @@ class BlockChain:
             return False
         if not block.verify_transactions_are_fundable(self.user_balances):
             return False
+        # verify that none of the new transactions are already in the blockchain
+        if block.index == 0:
+            # genesis block is a dict
+            for txn in block["Transactions"]:
+                if txn.tid in self.accepted_transactions:
+                    # we've seen this transaction before, reject block
+                    return False
+        else:
+            # other blocks are block objects
+            for txn in block.transactions:
+                if txn.tid in self.accepted_transactions:
+                    # we've seen this transaction before, reject block
+                    return False
         # index (which started at zero) of a new block should be the
         # same value as the current length of the chain
         if block.index != self.length:
@@ -205,9 +221,10 @@ class BlockChain:
         # the previous hash must be the hash of the current last block
         # in the blockchain
         if block.index-1 == 0:
-            # stupid genesis
+            # previous block is genesis block which is a dictionary
             if block.prev_hash != self.block_chain[block.index-1]["Hash"]:
                 return False
+        # otherwise, the previous block is a normal block object
         elif block.prev_hash != self.block_chain[block.index-1].hash:
             return False
         return True
