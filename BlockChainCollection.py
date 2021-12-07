@@ -63,6 +63,9 @@ class BlockChainCollection:
             self.blockchain_forks[bc_fork.block_chain[-1].hash] = bc_fork
             return 1
     
+    def print_main_fork(self):
+        print(self.main_blockchain)
+
     def print_forks(self):
         print("---- Start Main BlockChain Fork ----")
         print(self.main_blockchain)

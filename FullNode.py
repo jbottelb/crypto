@@ -21,7 +21,7 @@ from BlockChainCollection import BlockChainCollection
 
 
 def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: set, 
-                  blockchain: BlockChain.BlockChain, connections: dict):
+                  blockchains_collection: BlockChainCollection, connections: dict):
     '''
     Handles behavior for different message types that a full node
     expects to receive. Ignores messages that are irrelevant to
@@ -168,7 +168,9 @@ def main():
         blockchains_collection.add_blockchain_fork(longest_bc)
         # store all the longest blockchain forks in our blockchain collection
         for tlbc in tied_length_blockchains:
-            blockchains_collection.add_blockchain_fork(tlbc)
+            # the longest blockchain could have changed, so check lengths again
+            if tlbc.length == longest_bc_length:
+                blockchains_collection.add_blockchain_fork(tlbc)
 
     # TODO:
     blockchains_collection.print_forks()
@@ -208,7 +210,7 @@ def main():
                 # read from the socket
                 message = Utilities.readMessage(sock, connections)
                 if message is not None:
-                    handle_message(sock, message, neighbors, miners, blockchain, connections)
+                    handle_message(sock, message, neighbors, miners, blockchains_collection, connections)
         # handle any issues with sockets
         for sock in exceptional:
             if sock == main_sock:
