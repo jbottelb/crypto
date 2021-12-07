@@ -212,15 +212,16 @@ class BlockChain:
         balances = defaultdict(int) # collect running balances for ordering
         prev_hash = None
         for block in self.block_chain:
-            if block.index == 0:
+            if isinstance(block, dict):
                 # check hash of the genesis
-                to_hash = block
+                to_hash = block.copy() # that was a nasty bug
                 del to_hash["Hash"]
                 hash = sha256(json.dumps(to_hash).encode()).hexdigest()
                 if not hash == block["Hash"]:
                     return False
                 for T in block["Transactions"]:
                     balances[T[0]] = int(T[1])
+                prev_hash = block["Hash"]
             else:
                 # check that block contains the hash of the previous block
                 if block.prev_hash != prev_hash:
@@ -233,7 +234,7 @@ class BlockChain:
                     if not T.verify_transaction_authenticity():
                         # transaction was not authentic
                         return False
-                    if balances[T.sender] < T.amount:
+                    if balances[T.sender] > T.amount:
                         # sender did not have large enough balance for the transaction
                         return False
                     # update balances for sender and recipient
@@ -241,8 +242,9 @@ class BlockChain:
                     balances[T.sender]    -= T.amount
                 hash = sha256(block.string_for_mining().encode()).hexdigest()
                 if hash != block.hash:
+                    print("owo uh oh the hashie washie went oppsie whoopsie owo")
                     return False
-            prev_hash = block.hash
+                prev_hash = block.hash
         return True
 
     def __str__(self):
