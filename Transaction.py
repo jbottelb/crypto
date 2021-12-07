@@ -5,12 +5,18 @@ from RSA_Keys import RSA_Keys as RK
 from Wallet import Wallet
 
 class Transaction:
-    def __init__(self, sender, recipient, amount):
-        self.tid = datetime.datetime.now()
+    def __init__(self, sender, recipient, amount, tid=None, signature=None):
+        if not tid:
+            self.tid = datetime.datetime.now()
+        else:
+            self.tid = tid
         self.sender = sender
         self.recipient = recipient
         self.amount = amount
-        self.signature = None
+        if not signature:
+            self.signature = None
+        else:
+            self.signature = signature
 
     def generate_transaction(Wallet, amount, recipient_key):
         '''
