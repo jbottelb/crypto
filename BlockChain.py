@@ -4,9 +4,8 @@ Brad Budden and Josh Bottelberghe
 Distributed Systems - Final Project
 BlockChain.py
 
-Description: This file contains the
-Block and BlockChain classes for use
-in our blockchain network.
+This file contains the Block and BlockChain classes for use
+in the blockchain network.
 '''
 import random
 import json
@@ -43,7 +42,7 @@ class Block:
 
     def verify_transactions_are_fundable(self, user_balances: defaultdict):
         '''
-        Takes in a BlockChain object's dictionary of user balances and 
+        Takes in a BlockChain object's dictionary of user balances and
         determines if all transaction senders have sufficient balances
         for the transaction amounts
         '''
@@ -170,7 +169,7 @@ class BlockChain:
             return False
         if not block.verify_transactions_are_fundable():
             return False
-        # index (which started at zero) of a new block should be the 
+        # index (which started at zero) of a new block should be the
         # same value as the current length of the chain
         if block.index != self.length:
             return False
@@ -187,7 +186,7 @@ class BlockChain:
         if block.prev_hash != self.block_chain[-1].hash:
             return False
         return True
-        
+
 
     def get_pk_total(self, pk):
         '''
@@ -253,19 +252,16 @@ if __name__=="__main__":
     '''
     Some cases for testing
     '''
+    with open("wallets.json") as f:
+        wallets = json.load(f)
+
+    print(wallets["Josh"][0])
+    #Josh = Wallet(wallets["Josh"])
+    #Brad = Wallet(wallets["Brad"])
+    Josh = Wallet(RK.generate_keys())
+    Brad = Wallet(RK.generate_keys())
+
     block_chain = BlockChain()
-    block = Block(1, block_chain.block_chain[0]["Hash"], "Josh's PK")
-    block.add_transaction(Transaction("Josh's PK", "Brad's PK", "10"))
-    block_chain.add_block(block)
-    print(block_chain)
-    print(block_chain.user_balances)
+    block = Block(1, block_chain.block_chain[0]["Hash"], wallets["Josh"][0])
 
-    John = Wallet(RK.generate_keys())
-    Mary = Wallet(RK.generate_keys())
-
-    block = Block(1, block_chain.block_chain[0]["Hash"], "Josh's PK")
-    for i in range(10):
-        block.add_transaction(Transaction(John.public_key, Mary.public_key, str(i)))
-    block_chain.add_block(block)
-    print(block_chain)
-    print(block_chain.user_balances)
+    Transaction.generate_transaction(Josh, 10, Brad.public_key)
