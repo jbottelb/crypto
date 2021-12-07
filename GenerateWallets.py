@@ -8,7 +8,7 @@ from Wallet import Wallet
 import json
 
 def itemize_wallet(wallet):
-    return [str(wallet.public_key), str(wallet.secret_key)]
+    return [str(wallet.public_key.decode()), str(wallet.secret_key.decode())]
 
 wallets = {}
 
