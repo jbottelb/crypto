@@ -18,7 +18,7 @@ def prompt():
 Choose one of these options:                        \n\
     g (filename) generate wallet file              \n\
     l (filename) load wallet file                   \n\
-    t (recipient pk) (amount) send a transaction   \n\
+    t (amount) send a transaction, then (user name)   \n\
     b check balance of the loaded wallet           \n\
     u update blockchain                            \n\
     q quit                                         \n\
@@ -51,7 +51,7 @@ def create_and_send_transaction(wallet, recipient, amount, trusted_node):
         print("You need to load a wallet before sending a transaction")
         return
     # re-decorate the recipient's public key
-    recipient = decorate_recipient_public_key(recipient)
+    # recipient = decorate_recipient_public_key(recipient)
     T = Transaction(wallet.public_key, recipient, amount)
     T.sign(wallet.secret_key)
     try:
@@ -112,6 +112,12 @@ def get_blockchain(trusted_node) -> BlockChain:
 def get_wallet_balance(wallet: Wallet, blockchain_copy: BlockChain):
     return blockchain_copy.user_balances[wallet.public_key]
 
+def read_default_users():
+    with open("DefaultUsers.json") as f:
+        data = json.load(f)
+        print(f"\nDefault Users: {[key for key in data.keys()]}")
+    return data
+
 def main():
 
     if len(sys.argv) != 1 and len(sys.argv) != 3:
@@ -147,6 +153,8 @@ def main():
     # start with the genesis block created
     blockchain_copy = BlockChain()
 
+    users_dict = read_default_users()
+
     wallet = None
     choice = prompt()
     print()
@@ -161,7 +169,12 @@ def main():
                 if wallet is None:
                     print("Load a valid wallet first")
                 else:
-                    create_and_send_transaction(wallet, choice[1], choice[2], trusted_node)
+                    amount = choice[1]
+                    res = input("(user name) or z to break ---->  ")
+                    if res != 'z':
+                        create_and_send_transaction(wallet, users_dict.get(res, ""), amount, trusted_node)
+                    else:
+                        continue
             elif choice[0] == "b":
                 if wallet is None:
                     print("Load a valid wallet first")
@@ -175,11 +188,8 @@ def main():
                 bc_copy = get_blockchain(trusted_node)
                 if bc_copy is not None:
                     blockchain_copy = bc_copy
-            else:
-                print("Invalid choice 1")
             choice = prompt()
         except:
-            print("Invalid choice 2")
             choice = prompt()
 
 if __name__=="__main__":

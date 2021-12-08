@@ -42,6 +42,7 @@ class Block:
         DOES NOT CHECK IF THE SENDER CAN SEND THE BALANCE
         (it is quicker to just do that when we validate the block)
         '''
+        # return True
         for t in self.transactions:
             print(f"type(t): {type(t)}")
             if not t.verify_transaction_authenticity():
