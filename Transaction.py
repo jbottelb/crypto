@@ -53,7 +53,7 @@ class Transaction:
         j["Transaction_ID"]         = str(self.tid)
         j["Sender_Public_Key"]      = str(self.sender)
         j["Recipient_Public_Key"]   = str(self.recipient)
-        j["Amount"]                 = self.amount
+        j["Amount"]                 = int(self.amount)
         if self.signature and sig:
             j["Signature"] = list(self.signature) # convert bytes to list of ints
         return j

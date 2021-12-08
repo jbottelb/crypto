@@ -110,7 +110,7 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
         tid = message["Transaction_ID"]
         sender_pk = message["Sender_Public_Key"]
         recipient_pk = message["Recipient_Public_Key"]
-        amount = message["Amount"]
+        amount = int(message["Amount"])
         signature = bytes(message["Signature"]) # create bytes from array of ints
         prev_recipients = message["Previous_Message_Recipients"]
         new_transaction = Transaction(sender_pk, recipient_pk, amount, tid, signature)
@@ -124,13 +124,30 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
             for txn in pending_transactions:
                 if tid == txn.tid:
                     return
+            pending_transactions.add(new_transaction)
             # compare to accepted transactions in our main blockchain fork
             if tid not in blockchains_collection.main_blockchain.accepted_transactions:
                 # not seen before
                 prev_recipients.append(main_sock.getsockname())
                 message["Previous_Message_Recipients"] = prev_recipients
+                print("Forwarding transaction to neighbors")
                 for n in neighbors:
-                    Utilities.sendMessage(message)
+                    Utilities.sendMessage(message, addr=n)
+            # tell sender whether or not we though the transaction was valid
+            # (will be used by lightweight nodes)
+            if blockchains_collection.main_blockchain.user_balances.get(sender_pk, 0) < amount:
+                # sender balance too low -> not valid
+                response = {"Type": MessageTypes.Send_Transaction_Response, "Valid": "No"}
+            else:
+                # sender balance sufficient -> valid
+                response = {"Type": MessageTypes.Send_Transaction_Response, "Valid": "Yes"}
+                print(f"pending_transactions: {pending_transactions}")
+            Utilities.sendMessage(response, False, sock=sock)
+        else:
+            # transaction not authentic -> not valid
+            response = {"Type": MessageTypes.Send_Transaction_Response, "Valid": "No"}
+            Utilities.sendMessage(response, False, sock=sock)
+
     elif msgtype == MessageTypes.Get_Blockchain:
         # send blocks back one by one
         bc_length = blockchains_collection.main_blockchain.length
@@ -261,8 +278,6 @@ def main():
         if tlbc.length == longest_bc_length:
             blockchains_collection.add_blockchain_fork(tlbc)
 
-    blockchains_collection.print_forks()
-
     main_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     main_sock.bind(("", port))
     main_sock.listen()
@@ -288,7 +303,7 @@ def main():
             blockchains_collection.prune_short_forks()
 
         # listen for a second for a readable socket
-        readable, writeable, exceptional = select.select(connections.keys(), [], [], 1)
+        readable, writeable, exceptional = select.select([conn for conn in connections.keys() if conn.fileno() >= 0], [], [], 1)
 
         for sock in readable:
             # main socket has bytes to read, means we should accept

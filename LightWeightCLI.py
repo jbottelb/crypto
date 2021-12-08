@@ -47,14 +47,16 @@ def decorate_recipient_public_key(recipient):
 
 def create_and_send_transaction(wallet, recipient, amount, trusted_node):
     if not wallet:
-        print("Load a wallet!")
+        print("You need to load a wallet before sending a transaction")
         return
     # re-decorate the recipient's public key
     recipient = decorate_recipient_public_key(recipient)
     T = Transaction(wallet.public_key, recipient, amount)
     T.sign(wallet.secret_key)
-    send_transaction(T, trusted_node)
-    print("Transaction sent to Node")
+    try:
+        send_transaction(T, trusted_node)
+    except:
+        pass
 
 def send_transaction(T: Transaction, trusted_node):
     '''
@@ -71,8 +73,24 @@ def send_transaction(T: Transaction, trusted_node):
     # message["Signature"] = list(T.signature) # send bytes as array of ints
     sock.connect(trusted_node)
     sock.settimeout(5)
-    r = Utilities.sendMessage(message, True, sock=sock)
-    print(r)
+    r = Utilities.sendMessage(message, True, sock=sock, connections={})
+    if r:
+        print("Transaction sent to Node")
+    else:
+        print("Issue sending block to trusted node")
+        return
+    try:
+        response = Utilities.readMessage(sock)
+        if response is None:
+            print("Unable to determine if transaction was deemed valid by trusted node")
+            return
+        if response["Valid"] == "Yes":
+            print("Transaction valid according to trusted node")
+        else:
+            print("Transaction currently invalid according to trusted node")
+    except:
+        return
+
 
 def get_blockchain(trusted_node) -> BlockChain:
     try:
@@ -138,7 +156,7 @@ def main():
                 if wallet is None:
                     print("Load a valid wallet first")
                 else:
-                    create_and_send_transaction(wallet, choice[1], choice[2])
+                    create_and_send_transaction(wallet, choice[1], choice[2], trusted_node)
             elif choice[0] == "b":
                 if wallet is None:
                     print("Load a valid wallet first")
@@ -153,10 +171,10 @@ def main():
                 if bc_copy is not None:
                     blockchain_copy = bc_copy
             else:
-                print("Invalid choice")
+                print("Invalid choice 1")
             choice = prompt()
         except:
-            print("Invalid choice")
+            print("Invalid choice 2")
             choice = prompt()
 
 if __name__=="__main__":

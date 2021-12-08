@@ -46,7 +46,6 @@ class Utilities:
         on the message type.
         Returns: True if valid, False otherwise
         '''
-        print("Got to _isValidMessage")
         msgtype = message.get("Type", 0)
         if not msgtype or msgtype not in [MessageTypes.__dict__[key] for key in MessageTypes.__dict__.keys() if not key.startswith("__")]:
             print(f"msgtype: {msgtype}")
@@ -277,7 +276,10 @@ class Utilities:
                 del connections[sock]
             return None
         if connections is not None:
-            print(f"Handling message from {connections[sock]}...")
+            try:
+                print(f"Handling message from {connections[sock]}...")
+            except:
+                pass
         try:
             data = str(data, 'utf-8') # convert to string
             message = json.loads(data)
@@ -354,7 +356,7 @@ class Utilities:
         # wait for response from name server (until timeout)
         sock.settimeout(5)
         response = Utilities.readMessage(sock)
-        print("got response from name server")
+        print("Received response from name server")
         if response is not None:
             if response.get("Type", 0) == MessageTypes.Get_Seed_Nodes_Response:
                 sock.close()
