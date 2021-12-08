@@ -34,7 +34,6 @@ def try_start_mining_new_block(currently_mining: bool, transactions_being_mined:
         3) We got a new block, and it came from another full node and
            becomes part of our main branch
     '''
-    print("in try_start_mining_new_block")
     # Try to start mining a new block
     temp_user_balances = blockchains_collection.main_blockchain.user_balances.copy()
     transactions_obj_list = [] 
@@ -49,15 +48,12 @@ def try_start_mining_new_block(currently_mining: bool, transactions_being_mined:
             temp_user_balances[txn.sender] -= txn.amount
             transactions_obj_list.append(txn)
             transactions_json_list.append(txn.to_json())
-    print("got here in tsmnb 1")
     if len(transactions_json_list) > 0:
         prev_hash = blockchains_collection.main_blockchain.get_last_hash()
         block_index = blockchains_collection.main_blockchain.length
         message = {"Type": MessageTypes.Start_New_Block, "Transactions": transactions_json_list,
                     "Prev_Hash": prev_hash, "Block_Index": block_index}
-        print(f"miners right before looping over them: {miners}")
         for miner in miners:
-            print(f"miner: {miner}")
             # send this start_new_block message to all of our miners
             miner_string = f"{miner[0]}:{miner[1]}"
             miner_sock = None
@@ -65,12 +61,9 @@ def try_start_mining_new_block(currently_mining: bool, transactions_being_mined:
                 # the socket with our miner still exists, use it
                 miner_sock = [sock for sock in connections.keys() if connections[sock] == miner_string][0]
                 Utilities.sendMessage(message, True, miner, miner_sock, connections)
-                print("sent message using original miner socket")
             except:
                 # try a new socket with our miner
                 Utilities.sendMessage(message, True, miner, None, connections)
-                print("sent message using a new miner socket")
-        print("got here in tsmnb 2")
         currently_mining = True
         transactions_being_mined = transactions_obj_list
 
@@ -103,7 +96,6 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
         miner_addr = connections[sock].split(":")
         miner_addr_tuple = (miner_addr[0], int(miner_addr[1]))
         miners.add(miner_addr_tuple)
-        print(f"miners set after we added the new miner: {miners}")
         # send decision to miner so it knows we accepted it and will send
         # tasks its way soon; keep socket open and save it
         Utilities.sendMessage(response, True, sock=sock, connections=connections)
@@ -117,7 +109,6 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
         transactions = [Utilities.transactionDictToObject(txn) for txn in message["Transactions"]]
         new_block = Block(message["Block_Index"], message["Prev_Hash"], message["Miner_PK"],
                           message["Nonce"], transactions, message["Hash"])
-        print("MADE NEW BLOCK OUT OF SEND_BLOCK MESSAGE FROM MINER")
         if sock.getpeername() in miners:
             # Block came from miner. If all transactions included in the block are still in
             # pending_transactions, then we know that this miner is our first miner to solve the hash,
@@ -125,18 +116,12 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
             # aren't in pending_transactions, then we've either gotten a valid block from another full node
             # with some of the transactions included already, OR another one of our miners already
             # mined a block with some of those transactions, and so we should discard the block.
-            print(f"PENDING_TRANSACTIONS: {[pt for pt in pending_transactions]}")
-            print(f"transactions in mined block: {[t for t in transactions]}")
             for txn in transactions:
-                print(f"txn in transactions: {txn}")
                 pending_transaction_tids = [t.tid for t in pending_transactions]
                 if txn.tid not in pending_transaction_tids:
-                    print("TXN NOT IN PENDING_TRANSACTIONS")
                     return
             # Try to add it if valid
-            print("TRY_ADD_BLOCK")
             rc = blockchains_collection.try_add_block(new_block, orphan_blocks, pending_transactions)
-            print(f"JUST DID TRY_ADD_BLOCK, HERE IS RC: {rc}, HERE IS PENDING_TRANSACTIONS: {pending_transactions}")
             if rc == 1:
                 # block is in our main blockchain fork, forward block to neighbors
                 message["Previous_Message_Recipients"] = [main_sock.getsockname()]
@@ -224,7 +209,6 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
         # if we aren't mining right now, send a block to miners with up to
         # TPB pending_transactions
         if not currently_mining:
-            print("Calling try_start_mining_new_block")
             try_start_mining_new_block(currently_mining, transactions_being_mined, miners, pending_transactions,
                                        connections, blockchains_collection)
             
@@ -380,20 +364,6 @@ def main():
         if int(time.time() - latest_ping) > int(Constants.NEIGHBOR_PING_INTERVAL) or first_ping:
             # remove neighbors from the set if they aren't active anymore
             ping_nodes(neighbors, main_sock.getsockname())
-            # remove miners from the set if they aren't active anymore
-            # miners_to_discard = []
-            # for miner in miners:
-            #     miner_string = f"{miner[0]}:{miner[1]}"
-            #     miner_sock = None
-            #     miner_sock = [sock for sock in connections.keys() if connections[sock] == miner_string][0]
-            #     if miner_sock.fileno() < 0:
-            #         # miner's socket has been closed due to miner shutdown
-            #         miners_to_discard.append(miner)
-            # for miner in miners_to_discard:
-            #     miners.discard(miner)
-
-            # first_ping = False
-            # latest_ping = time.time()
 
         # prune the blockchain collection so that short forks are discarded
         if int(time.time() - latest_prune) > int(Constants.BLOCKCHAIN_FORK_PRUNING_INTERVAL):

@@ -55,7 +55,6 @@ def create_and_send_transaction(wallet, recipient, amount, trusted_node):
     T = Transaction(wallet.public_key, recipient, amount)
     T.sign(wallet.secret_key)
     try:
-        print("calling send_transaction")
         send_transaction(T, trusted_node)
     except:
         pass

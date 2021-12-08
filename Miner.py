@@ -80,7 +80,6 @@ class Miner:
                     print(e)
                     block = None
             elif hash:
-                print("Found hash and sending block")
                 # We found a hash before receiving a new block to mine; send back block
                 message = {"Type": MessageTypes.Send_Block, "Block_Index": block.index, "Miner_PK": self.pk,
                             "Prev_Hash": block.prev_hash, "Nonce": block.nonce, "Hash": hash,

@@ -44,9 +44,7 @@ class Block:
         '''
         # return True
         for t in self.transactions:
-            print(f"type(t): {type(t)}")
             if not t.verify_transaction_authenticity():
-                print(f"THIS TRANSACTION COULDNT BE VERIFIED: {t}")
                 if send_bad_transaction:
                     return t
                 return False
@@ -299,9 +297,3 @@ class BlockChain:
             copy.add_block(block)
         return copy
 
-
-if __name__=="__main__":
-    '''
-    Some cases for testing
-    '''
-    print("Test cases in BlockChainTesting")
