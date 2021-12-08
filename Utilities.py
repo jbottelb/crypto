@@ -232,8 +232,15 @@ class Utilities:
             if valid is None or type(valid) != str:
                 return False
             return True
+        
+        elif msgtype == MessageTypes.Get_Block:
+            if len(message.keys()) != 2:
+                return False
+            hash = message.get("Hash", None)
+            if not hash or type(hash) != str:
+                return False
+            return True
 
-        # TODO: check other types if more are added
         return False
 
     @staticmethod
@@ -378,7 +385,7 @@ class Utilities:
         return returnList
     
     @staticmethod
-    def sendMessage(message: dict, keepSocketOpen: bool, addr: tuple = None, 
+    def sendMessage(message: dict, keepSocketOpen: bool = False, addr: tuple = None, 
                     sock: socket.socket = None, connections: dict = None) -> int:
         '''
         Handles the mechanics of sending a message, given a message dict and either a socket

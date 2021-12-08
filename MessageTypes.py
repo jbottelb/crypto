@@ -13,3 +13,4 @@ class MessageTypes:
     Start_New_Block_Response = "Start_New_Block_Response"
     Get_Blockchain_Response = "Get_Blockchain_Response"
     Send_Transaction_Response = "Send_Transaction_Response"
+    Get_Block = "Get_Block"

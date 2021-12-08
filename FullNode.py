@@ -14,14 +14,15 @@ import sys
 import select
 from MessageTypes import MessageTypes
 from Utilities import Utilities
-import BlockChain
+from BlockChain import BlockChain, Block
 import time
 from Constants import Constants
 from BlockChainCollection import BlockChainCollection
 
 
 def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: set, 
-                  blockchains_collection: BlockChainCollection, connections: dict):
+                  blockchains_collection: BlockChainCollection, connections: dict,
+                  orphan_blocks: set, pending_transactions: set, block_hashes_seen_before: set):
     '''
     Handles behavior for different message types that a full node
     expects to receive. Ignores messages that are irrelevant to
@@ -50,16 +51,67 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
         # tasks its way soon; keep socket open and save it
         Utilities.sendMessage(response, True, sock=sock, connections=connections)
     elif msgtype == MessageTypes.Send_Block:
-        # TODO: HANDLE THE ACCEPTANCE (In real implementation, this will need to check if its coming from miner)
-        if 
+        hash = message["Hash"]
+        if hash in block_hashes_seen_before:
+            # prevents us from dealing with blocks that we've already handled before
+            return
+        else:
+            block_hashes_seen_before.add(hash)
+        transactions = [Utilities.transactionDictToObject(txn) for txn in message["Transactions"]]
+        new_block = Block(message["Block_Index"], message["Prev_Hash"], message["Miner_PK"], 
+                          message["Nonce"], transactions, message["Hash"])
+        if sock.getpeername() in miners:
+            # Block came from miner. If all transactions included in the block are still in
+            # pending_transactions, then we know that this miner is our first miner to solve the hash,
+            # and so we should forward the block (after adding it). If any transactions in the block 
+            # aren't in pending_transactions, then we've either gotten a valid block from another full node
+            # with some of the transactions included already, OR another one of our miners already
+            # mined a block with some of those transactions, and so we should discard the block.
+            for txn in transactions:
+                if txn not in pending_transactions:
+                    return
+            # Try to add it if valid
+            rc = blockchains_collection.try_add_block(new_block, orphan_blocks, pending_transactions)
+            if rc == 1:
+                # block is in our main blockchain fork, forward block to neighbors
+                message["Previous_Message_Recipients"] = [sock.getsockname()]
+                for n in neighbors:
+                    Utilities.sendMessage(message, addr=n)
+        else:
+            # Otherwise, the block is coming from a full node. Try to add it to a blockchain fork.
+            rc = blockchains_collection.try_add_block(new_block, orphan_blocks, pending_transactions)
+            if rc == 1 or rc == 3:
+                # block is in our main blockchain fork, forward block to neigbors
+                message["Previous_Message_Recipients"].append(sock.getsockname())
+                for n in neighbors:
+                    Utilities.sendMessage(message, addr=n)
+            elif rc == 0:
+                # block was an orphan, try to get its parent from our neighbors
+                message = {"Type": MessageTypes.Get_Block, "Hash": new_block.hash}
+                for n in neighbors:
+                    Utilities.sendMessage(message, addr=n)
+    elif msgtype == MessageTypes.Get_Block:
+        desired_block_hash = message["Hash"]
+        # try to find the block in our blockchains collection
+        block = blockchains_collection.get_block_by_hash(desired_block_hash, orphan_blocks)
+        if block:
+            # send the block to the requesting full node
+            message = {"Type": MessageTypes.Send_Block, "Block_Index": block.index,
+                       "Miner_PK": block.miner_pk, "Prev_Hash": block.prev_hash,
+                       "Nonce": block.nonce, "Hash": block.hash, "Transactions": block.transactions,
+                       "Previous_Message_Recipients": []}
+            Utilities.sendMessage(message, sock=sock)
     
-    
-    
-    else:
-        pass
+    elif msgtype == MessageTypes.
 
-    # TODO: Implement handling of other messages that a full node should expect.
-    #       Right now, we are only handling messages needed to talk with miners.
+    # get_blockchain
+
+    # get_blockchain_response
+
+    # send_transaction
+
+    # send_transaction_response
+    
 
 
 def ping_nodes(nodes: set):
@@ -98,6 +150,8 @@ def main():
     pending_transactions = set()
     # create set of orphan blocks
     orphan_blocks = set()
+    # create set of block hashes that we have seen before
+    block_hashes_seen_before = set()
 
     # handle having a trusted host to start with (As a full node)
     if trusted_host is not None:
@@ -185,6 +239,7 @@ def main():
 
     first_ping = True
     latest_ping = time.time()
+    latest_prune = time.time()
 
     while 1:
         # ping neighbor and miner nodes at the specified interval to determine which are active
@@ -194,6 +249,10 @@ def main():
             ping_nodes(miners)
             first_ping = False
             latest_ping = time.time() 
+        
+        # prune the blockchain collection so that short forks are discarded
+        if int(time.time() - latest_prune) > int(Constants.BLOCKCHAIN_FORK_PRUNING_INTERVAL):
+            blockchains_collection.prune_short_forks()
         
         # listen for a second for a readable socket
         readable, writeable, exceptional = select.select(connections.keys(), [], [], 1)
@@ -211,7 +270,8 @@ def main():
                 # read from the socket
                 message = Utilities.readMessage(sock, connections)
                 if message is not None:
-                    handle_message(sock, message, neighbors, miners, blockchains_collection, connections)
+                    handle_message(sock, message, neighbors, miners, blockchains_collection, 
+                                   connections, orphan_blocks, pending_transactions block_hashes_seen_before)
         # handle any issues with sockets
         for sock in exceptional:
             if sock == main_sock:

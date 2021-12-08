@@ -23,6 +23,31 @@ class BlockChainCollection:
     def __init__(self):
         self.main_blockchain = None
         self.blockchain_forks = dict()
+
+    def prune_short_forks(self):
+        '''
+        Prunes side branches that are far behind
+        Returns: nothing
+        '''
+        for bc_fork in self.blockchain_forks.items():
+            if self.main_blockchain.length - bc_fork[1].length >= Constants.SIDE_BLOCKCHAIN_DIFFERENCE_FOR_PRUNING:
+                # side branch is too far behind, discard it
+                del self.blockchain_forks[bc_fork[0]]
+
+    def get_block_by_hash(self, desired_hash: str, orphan_blocks: set) -> Block:
+        '''
+        Searches for a block with the specified hash
+        Returns: Block or None
+        '''
+        bc_forks = [item[1] for item in self.blockchain_forks.items()] # <- get the BlockChain objects ("forks")
+        for bc_fork in bc_forks:
+            for block in bc_fork.block_chain[1:]:
+                if block.hash == desired_hash:
+                    return block
+        for block in orphan_blocks:
+            if block.hash == desired_hash:
+                return block
+        return None
     
     def try_add_block(self, new_block: Block, orphan_blocks: set, pending_transactions: set):
         '''
@@ -31,11 +56,11 @@ class BlockChainCollection:
         Makes a side fork into the main fork if adding the block to
         the side fork makes it longer than the main fork (and 
         manages/updates the set of pending transactions accordingly).
-        Returns: -1 if block is invalid, 0 if block is an orphan, 
-        1 if block was added to main fork, 2 if the block was added to 
-        a side fork that did not become longer than the main fork, 
-        and 3 if block was added to a side fork that became the 
-        main fork as a result
+        Returns: -1 if block is invalid or already in a fork, 0 if 
+        block is an orphan, 1 if block was added to main fork, 
+        2 if the block was added to a side fork that did not become 
+        longer than the main fork, and 3 if block was added to a 
+        side fork that became the main fork as a result
         '''
 
         # check that the transactions in the new block are authentic
@@ -125,16 +150,19 @@ class BlockChainCollection:
                     # now we can move on
                     break
                 # consider all buried blocks in the fork
-                for buried_block in bc_fork.block_chain[:-1]:
-                    if new_block.prev_hash == buried_block.hash:
+                for index, buried_block in enumerate(bc_fork.block_chain[:-1]):
+                    # check if a new block adds onto a buried block, and also check that the next block in
+                    # the fork isn't the same as the new block we are trying to add (could occur if we get
+                    # the same block two or more times)
+                    if new_block.prev_hash == buried_block.hash and bc_fork.block_chain[index+1].hash != new_block.hash:
                         # new block adds onto a buried block, create a new BlockChain fork
                         # at that buried block, append the new block, and add this new fork
                         # to self.blockchain_forks
                         new_fork = bc_fork.copy()
-                        new_fork.block_chain = new_fork.block_chain[:buried_block.block_index + 1]
+                        new_fork.block_chain = new_fork.block_chain[:buried_block.index + 1]
                         if new_fork.validate_block(new_block):
                             # just add the block, don't touch the pending_transactions set
-                            new_fork.add_block(new_block)
+                            new_fork.add_block(new_block.copy())
                             # add the new fork to our collection of forks
                             self.add_blockchain_fork(new_fork)
                             found_buried_parent = True
@@ -142,6 +170,7 @@ class BlockChainCollection:
 
         if not found_parent and not found_buried_parent:
             # orphan block
+            orphan_blocks.add(new_block.copy())
             return 0
         if found_parent and added_to_main_fork:
             # added to main fork
@@ -152,6 +181,7 @@ class BlockChainCollection:
         if found_parent or found_buried_parent:
             # added to side fork that did not become main fork
             return 2
+        return -1
     
     def add_blockchain_fork(self, bc_fork: BlockChain):
         '''
