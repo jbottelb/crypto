@@ -89,7 +89,6 @@ class Miner:
                 Utilities.sendMessage(message, True, None, parent)
                 mining = False
                 block = None
-                # hash = None # test
 
             # if we recieved a block from the full node, update our personal
             # block object (which we will convert to a string to mine on)
