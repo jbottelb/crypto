@@ -5,7 +5,7 @@ Handles generating RSA keys, signing messages and verifying them
 from base64 import b64encode
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
-from Crypto.Signature import pkcs1_15
+import Crypto.Signature
 import random
 
 class RSA_Keys:
@@ -24,7 +24,7 @@ class RSA_Keys:
         Uses the private key to sign the message
         '''
         digest = SHA256.new(message.encode())
-        return pkcs1_15.new(RSA.import_key(secret_key)).sign(digest)
+        return Crypto.Signature.pkcs1_15.new(RSA.import_key(secret_key)).sign(digest)
 
     def verify(public_key: str, message: str, signature: str):
         '''
@@ -33,7 +33,7 @@ class RSA_Keys:
         '''
         digest = SHA256.new(message.encode())
         try:
-            pkcs1_15.new(RSA.import_key(public_key)).verify(digest, signature)
+            Crypto.Signature.pkcs1_15.new(RSA.import_key(public_key)).verify(digest, signature)
         except Exception as e:
             return False
         return True
