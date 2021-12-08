@@ -117,13 +117,11 @@ class BlockChain:
         self.length = 0
         self.accepted_transactions = set()
         self.user_balances = defaultdict(int)
+        self.add_block(self.create_genesis(), True)
         if data:
             # read in the data to create the blockchain
             for block in data:
                 self.add_block(block)
-        else:
-            # create a blockchain from scratch
-            self.add_block(self.create_genesis(), True)
 
     def create_genesis(self, data=None) -> dict:
         '''
@@ -157,6 +155,10 @@ class BlockChain:
         Returns: True on success, False on failure
         '''
         # add transcations
+        if genesis:
+            self.block_chain.append(block)
+            self.length = 1
+            return True
         if not genesis:
             for T in block.transactions:
                 self.user_balances[T.recipient] += int(T.amount)
@@ -197,7 +199,7 @@ class BlockChain:
                     return False
         # index (which started at zero) of a new block should be the
         # same value as the current length of the chain
-        if block.index != self.length-1:
+        if block.index != self.length:
             return False
         hash = sha256(block.string_for_mining().encode()).hexdigest()
         # the hash we get from the block's string representation should
@@ -265,6 +267,14 @@ class BlockChain:
                     return False
                 prev_hash = block.hash
         return True
+
+    def get_last_hash(self):
+        '''
+        Returns the hash of the most recently added block
+        '''
+        if self.length == 1:
+            return self.block_chain[0]["Hash"]
+        return self.block_chain[self.length-1].hash
 
     def __str__(self):
         '''

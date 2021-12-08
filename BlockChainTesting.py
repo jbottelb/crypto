@@ -24,7 +24,7 @@ if __name__=="__main__":
     Mary = Wallet(wallets["Mary"])
 
     block_chain = BlockChain()
-    block = Block(1, block_chain.block_chain[0]["Hash"], wallets["Josh"][0])
+    block = Block(1, block_chain.get_last_hash(), wallets["Josh"][0])
     T = Transaction.generate_transaction(Josh, 100, Brad.public_key)
     block.add_transaction(T)
 
@@ -36,7 +36,7 @@ if __name__=="__main__":
     if block_chain.validate_block(block):
         block_chain.add_block(block)
 
-    block = Block(2, block_chain.block_chain[1].hash, wallets["Josh"][0])
+    block = Block(2, block_chain.get_last_hash(), wallets["Josh"][0])
     for i in range(10):
         T = Transaction.generate_transaction(John, i, Mary.public_key)
         block.add_transaction(T)

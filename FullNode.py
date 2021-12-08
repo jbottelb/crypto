@@ -20,7 +20,7 @@ from Constants import Constants
 from BlockChainCollection import BlockChainCollection
 
 
-def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: set, 
+def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: set,
                   blockchains_collection: BlockChainCollection, connections: dict,
                   orphan_blocks: set, pending_transactions: set, block_hashes_seen_before: set):
     '''
@@ -58,12 +58,12 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
         else:
             block_hashes_seen_before.add(hash)
         transactions = [Utilities.transactionDictToObject(txn) for txn in message["Transactions"]]
-        new_block = Block(message["Block_Index"], message["Prev_Hash"], message["Miner_PK"], 
+        new_block = Block(message["Block_Index"], message["Prev_Hash"], message["Miner_PK"],
                           message["Nonce"], transactions, message["Hash"])
         if sock.getpeername() in miners:
             # Block came from miner. If all transactions included in the block are still in
             # pending_transactions, then we know that this miner is our first miner to solve the hash,
-            # and so we should forward the block (after adding it). If any transactions in the block 
+            # and so we should forward the block (after adding it). If any transactions in the block
             # aren't in pending_transactions, then we've either gotten a valid block from another full node
             # with some of the transactions included already, OR another one of our miners already
             # mined a block with some of those transactions, and so we should discard the block.
@@ -101,8 +101,8 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
                        "Nonce": block.nonce, "Hash": block.hash, "Transactions": block.transactions,
                        "Previous_Message_Recipients": []}
             Utilities.sendMessage(message, sock=sock)
-    
-    elif msgtype == MessageTypes.
+
+    # elif msgtype == MessageTypes.
 
     # get_blockchain
 
@@ -111,7 +111,7 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
     # send_transaction
 
     # send_transaction_response
-    
+
 
 
 def ping_nodes(nodes: set):
@@ -129,11 +129,11 @@ def main():
     if len(sys.argv) < 2 or len(sys.argv) > 5:
         print("Usage: FullNode.py <port> [--trusted <trusted_hostname:port> <--seed>]\n 'seed' forces seed behavior (i.e., generates a genesis block")
         exit(-1)
-    
+
     if len(sys.argv) == 3:
         if sys.argv[2] != "--seed":
             print("Usage: FullNode.py <port> [--trusted <trusted_hostname:port> | <--seed>]\n 'seed' forces seed behavior (i.e., generates a genesis block")
-    
+
     port = int(sys.argv[1])
     trusted_host = None
     if "--trusted" in sys.argv:
@@ -145,7 +145,7 @@ def main():
         except:
             print("Usage: FullNode.py <port> [--trusted <trusted_hostname:port> | <--seed>]\n 'seed' forces seed behavior (i.e., generates a genesis block")
             exit(-1)
-    
+
     # stores (hostname, port) pairs of other full nodes in the system
     neighbors = set()
     # stores (hostname, port) paris of miners that are working for it
@@ -191,7 +191,6 @@ def main():
     # handle case where we found no neighbors
     if len(neighbors) == 0:
         print("No active full nodes discovered")
-        exit(-1)
 
     # TODO: print(neighbors)
 
@@ -199,11 +198,11 @@ def main():
     # (if needed) and abstract the appending of blocks
     blockchains_collection = BlockChainCollection()
     # create a blockchain and a genesis block if this node is to act as a seed node
-    if "--seed" in sys.argv:
+    if "--seed" or "-s" in sys.argv:
         # create personal copy of longest blockchain (more may be stored later);
         # note that this blockchain fork will generate its own genesis block because
         # no data is passed in
-        bc = BlockChain.BlockChain()
+        bc = BlockChain()
         blockchains_collection.add_blockchain_fork(bc)
     else:
         # otherwise, get blockchains from neighbors and make the longest
@@ -233,7 +232,7 @@ def main():
 
     # TODO:
     blockchains_collection.print_forks()
-    
+
     main_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     main_sock.bind(("", port))
     main_sock.listen()
@@ -252,16 +251,16 @@ def main():
             ping_nodes(neighbors)
             ping_nodes(miners)
             first_ping = False
-            latest_ping = time.time() 
-        
+            latest_ping = time.time()
+
         # prune the blockchain collection so that short forks are discarded
         if int(time.time() - latest_prune) > int(Constants.BLOCKCHAIN_FORK_PRUNING_INTERVAL):
             blockchains_collection.prune_short_forks()
-        
+
         # listen for a second for a readable socket
         readable, writeable, exceptional = select.select(connections.keys(), [], [], 1)
         for sock in readable:
-            # main socket has bytes to read, means we should accept 
+            # main socket has bytes to read, means we should accept
             # an incoming connection and store a socket for it
             if sock == main_sock:
                 conn, addr = sock.accept()
@@ -274,8 +273,8 @@ def main():
                 # read from the socket
                 message = Utilities.readMessage(sock, connections)
                 if message is not None:
-                    handle_message(sock, message, neighbors, miners, blockchains_collection, 
-                                   connections, orphan_blocks, pending_transactions block_hashes_seen_before)
+                    handle_message(sock, message, neighbors, miners, blockchains_collection,
+                                   connections, orphan_blocks, pending_transactions, block_hashes_seen_before)
         # handle any issues with sockets
         for sock in exceptional:
             if sock == main_sock:
@@ -299,10 +298,9 @@ def main():
                 except:
                     pass
                 del connections[sock]
-        
+
         # TODO: update pending_transactions pool if a block was found and send
         #       new start_new_block message to miners
 
 if __name__ == "__main__":
     main()
-
