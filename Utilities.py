@@ -55,11 +55,11 @@ class Utilities:
                 return False
             return True
         elif msgtype == MessageTypes.Get_Neighbors:
-            if len(message.keys() != 1):
+            if len(message.keys()) != 1:
                 return False
             return True
         elif msgtype == MessageTypes.Get_Blockchain:
-            if len(message.keys() != 1):
+            if len(message.keys()) != 1:
                 return False
             return True
         elif msgtype == MessageTypes.Send_Transaction:
@@ -151,8 +151,8 @@ class Utilities:
         elif msgtype == MessageTypes.Join_As_Miner:
             if len(message.keys()) != 1:
                 return False
-            return True 
-    
+            return True
+
         elif msgtype == MessageTypes.Join_As_Miner_Response:
             if len(message.keys()) != 2:
                 return False
@@ -182,7 +182,7 @@ class Utilities:
             if len(message.keys()) != 1:
                 return False
             return True
-        
+
         elif msgtype == MessageTypes.Get_Blockchain_Response:
             if len(message.keys()) != 8:
                 return False
@@ -224,7 +224,7 @@ class Utilities:
                 if type(item) != dict:
                     return False
             return True
-        
+
         elif msgtype == MessageTypes.Send_Transaction_Response:
             if len(message.keys()) != 2:
                 return False
@@ -232,7 +232,7 @@ class Utilities:
             if valid is None or type(valid) != str:
                 return False
             return True
-        
+
         elif msgtype == MessageTypes.Get_Block:
             if len(message.keys()) != 2:
                 return False
@@ -248,9 +248,9 @@ class Utilities:
         '''
         Attempts to read from the provided socket. Handles socket issues
         and invalid message formats. Will close sockets with issues and
-        remove them from the provided connections dictionary. Converts 
+        remove them from the provided connections dictionary. Converts
         message bytes to a python dictionary and returns it, otherwise indicates
-        an error. 
+        an error.
         Returns: None if invalid message or socket issue, otherwise a dict
         representing the message
         '''
@@ -292,7 +292,7 @@ class Utilities:
     @staticmethod
     def _connectToNameServer(sock: socket.socket) -> bool:
         '''
-        Tries to connect to the server by looking up the service with 
+        Tries to connect to the server by looking up the service with
         the specified project_name in catalog.cse.nd.edu.
         Returns: boolean representing whether a connection was made
         '''
@@ -324,7 +324,7 @@ class Utilities:
                         continue
                     return connection_made
         return connection_made
-    
+
     @staticmethod
     def getActiveSeedNodes() -> list or None:
         '''
@@ -360,8 +360,8 @@ class Utilities:
     @staticmethod
     def getNeighbors(addr: tuple) -> list or None:
         '''
-        Attempts to get the neighbors of a provided full node. If that node 
-        is not not alive or communication issues occur, it indicates this 
+        Attempts to get the neighbors of a provided full node. If that node
+        is not not alive or communication issues occur, it indicates this
         with a None response.
         Returns: list of neighbors (can be empty) if successful, None otherwise
         '''
@@ -383,16 +383,16 @@ class Utilities:
                 returnList = response.get("Neighbors", None)
         sock.close()
         return returnList
-    
+
     @staticmethod
-    def sendMessage(message: dict, keepSocketOpen: bool = False, addr: tuple = None, 
+    def sendMessage(message: dict, keepSocketOpen: bool = False, addr: tuple = None,
                     sock: socket.socket = None, connections: dict = None) -> int:
         '''
         Handles the mechanics of sending a message, given a message dict and either a socket
         or an address. If a socket is provided, it will be used, regardless of any provided
         address. Otherwise, a socket will be created for the given address. That socket
         will either be stored in the connections dict or not, depending on the keepSocketOpen
-        boolean that is provided. If a node wants a new socket to be kept open, it must provide 
+        boolean that is provided. If a node wants a new socket to be kept open, it must provide
         a connections dict for the socket to be added to.
         Returns: 1 if successful, 0 otherwise
         '''
@@ -428,7 +428,7 @@ class Utilities:
             if connections is not None:
                 del connections[sock]
         return 1
-    
+
     @staticmethod
     def transactionDictToObject(txn_dict: dict) -> Transaction:
         '''
@@ -436,7 +436,7 @@ class Utilities:
         Transaction object with that data (or None if error occurs)
         '''
         try:
-            temp_txn = Transaction(txn_dict["Sender_Public_Key"], 
+            temp_txn = Transaction(txn_dict["Sender_Public_Key"],
                                    txn_dict["Recipient_Public_Key"],
                                    txn_dict["Amount"],
                                    txn_dict["Transaction_ID"],
@@ -455,7 +455,8 @@ class Utilities:
         blocks = []
         message = {"Type": MessageTypes.Get_Blockchain}
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        rc = Utilities.sendMessage(message, True, neighbor, sock, dict())
+        sock.connect(neighbor)
+        rc = Utilities.sendMessage(message, neighbor, sock=sock)
         if not rc:
             # issue sending message
             return None
@@ -519,7 +520,7 @@ class Utilities:
             temp_block = Block(block_index, prev_hash, miner_pk, nonce, transaction_objects, hash)
             # store block in list of blocks
             blocks.append(temp_block)
-        
+
         if len(blocks) != expected_number_of_blocks:
             return None
         temp_blockchain = BlockChain(blocks)
@@ -527,14 +528,3 @@ class Utilities:
             # invalid blockchain
             return None
         return temp_blockchain
-
-            
-
-
-
-
-
-
-        
-
-    
