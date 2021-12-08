@@ -42,6 +42,7 @@ def generate_wallet(filename):
 def decorate_recipient_public_key(recipient):
     beginning = "-----BEGIN PUBLIC KEY-----"
     ending = "-----END PUBLIC KEY-----"
+    print(beginning + recipient + ending)
     return beginning + recipient + ending
 
 

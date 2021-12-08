@@ -43,7 +43,9 @@ class Block:
         (it is quicker to just do that when we validate the block)
         '''
         for t in self.transactions:
+            print(f"type(t): {type(t)}")
             if not t.verify_transaction_authenticity():
+                print(f"THIS TRANSACTION COULDNT BE VERIFIED: {t}")
                 if send_bad_transaction:
                     return t
                 return False

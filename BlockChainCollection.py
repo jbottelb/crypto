@@ -65,6 +65,7 @@ class BlockChainCollection:
 
         # check that the transactions in the new block are authentic
         if not new_block.verify_transaction_authenticities():
+            print("verify_transaction_authenticities failed in try_add_block")
             return -1
 
         # look at the final hashes of our current blockchain forks, check if
@@ -88,8 +89,13 @@ class BlockChainCollection:
                         # update the individual copy of the main blockchain fork as well
                         self.main_blockchain = self.blockchain_forks[new_block.hash].copy()
                         added_to_main_fork = True
+                        transactions_to_discard = []
                         for txn in new_block.transactions:
-                            pending_transactions.discard(txn.tid)
+                            for t in pending_transactions:
+                                if txn.tid == t.tid:
+                                    transactions_to_discard.append(t)
+                        for txn in transactions_to_discard:
+                            pending_transactions.discard(txn)
                         # we've added the block, we can move on
                         break
                     # if it's not the main fork, we must check if the side fork has
@@ -119,8 +125,13 @@ class BlockChainCollection:
                                 pending_transactions.add(txn.copy())
                             # also, remove transactions from pending transactions if they are
                             # in the new main fork's genesis block
+                            transactions_to_discard = []
                             for txn in self.blockchain_forks[new_block.hash].block_chain[0]["Transactions"]:
-                                pending_transactions.discard(txn)
+                                for t in pending_transactions:
+                                    if txn["Transaction_ID"] == t.tid:
+                                        transactions_to_discard.append(t)
+                            for txn in transactions_to_discard:
+                                pending_transactions.discard(txn)   
                             common_ancestor_index = 0
                         # now handle blocks from after common_ancestor and onwards
                         for divergent_block in self.main_blockchain.block_chain[common_ancestor_index+1:]:
@@ -128,9 +139,14 @@ class BlockChainCollection:
                                 pending_transactions.add(txn.copy())
                         # Then we must remove all transactions in the new main branch (from common
                         # ancestor onward) from pending_transactions
+                        transactions_to_discard = []
                         for divergent_block in self.blockchain_forks[new_block.hash].block_chain[common_ancestor_index+1:]:
                             for txn in divergent_block.transactions:
-                                pending_transactions.discard(txn)
+                                for t in pending_transactions:
+                                    if txn.tid == t.tid:
+                                        transactions_to_discard.append(t)
+                        for txn in transactions_to_discard:
+                            pending_transactions.discard(txn)
                         # update the individual copy of the main blockchain fork
                         self.main_blockchain = self.blockchain_forks[new_block.hash].copy()
                 else:
