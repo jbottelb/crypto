@@ -156,21 +156,16 @@ class BlockChain:
         in which case block should be a dictionary.
         Returns: True on success, False on failure
         '''
-        if type(block) == dict and genesis == False:
-            return False
-        elif type(block) == Block and genesis == True:
-            return False
         # add transcations
         if genesis == True:
-            for T in block["Transactions"]:
-                self.user_balances[T[0]] += int(T[1])
+            pass
         else:
             for T in block.transactions:
                 self.user_balances[T.recipient] += int(T.amount)
                 self.user_balances[T.sender] -= int(T.amount)
                 self.accepted_transactions.add(T.tid)
             self.user_balances[block.miner_pk] += Constants.COINBASE
-        self.block_chain.append(block.copy())
+        self.block_chain.append(block)
         self.length += 1
         return True
 
@@ -195,10 +190,7 @@ class BlockChain:
         # verify that none of the new transactions are already in the blockchain
         if block.index == 0:
             # genesis block is a dict
-            for txn in block["Transactions"]:
-                if txn.tid in self.accepted_transactions:
-                    # we've seen this transaction before, reject block
-                    return False
+            return True
         else:
             # other blocks are block objects
             for txn in block.transactions:
@@ -207,7 +199,7 @@ class BlockChain:
                     return False
         # index (which started at zero) of a new block should be the
         # same value as the current length of the chain
-        if block.index != self.length:
+        if block.index != self.length-1:
             return False
         hash = sha256(block.string_for_mining().encode()).hexdigest()
         # the hash we get from the block's string representation should
@@ -237,7 +229,7 @@ class BlockChain:
 
     def verify_blockchain(self) -> bool:
         '''
-        Verifies entire blockchain. Genesis block is assumed valid 
+        Verifies entire blockchain. Genesis block is assumed valid
         except hash.
         '''
         balances = defaultdict(int) # collect running balances for ordering
