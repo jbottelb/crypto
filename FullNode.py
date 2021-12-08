@@ -126,20 +126,24 @@ def ping_nodes(nodes: set):
 
 def main():
 
-    if len(sys.argv) < 2 or len(sys.argv) > 4:
-        print("Usage: FullNode.py <port> [<trusted_hostname:port>]\n'-s' option to force seed behavior (i.e., generate a genesis block")
+    if len(sys.argv) < 2 or len(sys.argv) > 5:
+        print("Usage: FullNode.py <port> [--trusted <trusted_hostname:port> <--seed>]\n 'seed' forces seed behavior (i.e., generates a genesis block")
         exit(-1)
+    
+    if len(sys.argv) == 3:
+        if sys.argv[2] != "--seed":
+            print("Usage: FullNode.py <port> [--trusted <trusted_hostname:port> | <--seed>]\n 'seed' forces seed behavior (i.e., generates a genesis block")
     
     port = int(sys.argv[1])
     trusted_host = None
-    if len(sys.argv) == 3:
+    if "--trusted" in sys.argv:
         # read in and store trusted host
-        trusted_host = sys.argv[2]
         try:
+            trusted_host = sys.argv[3]
             trusted_host = trusted_host.split(":")
             trusted_host = (trusted_host[0], int(trusted_host[1]))
         except:
-            print("Usage: FullNode.py <port> [<trusted_hostname:port>]")
+            print("Usage: FullNode.py <port> [--trusted <trusted_hostname:port> | <--seed>]\n 'seed' forces seed behavior (i.e., generates a genesis block")
             exit(-1)
     
     # stores (hostname, port) pairs of other full nodes in the system
@@ -195,7 +199,7 @@ def main():
     # (if needed) and abstract the appending of blocks
     blockchains_collection = BlockChainCollection()
     # create a blockchain and a genesis block if this node is to act as a seed node
-    if "-s" in sys.argv:
+    if "--seed" in sys.argv:
         # create personal copy of longest blockchain (more may be stored later);
         # note that this blockchain fork will generate its own genesis block because
         # no data is passed in
