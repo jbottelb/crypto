@@ -123,7 +123,7 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
     elif msgtype == MessageTypes.Get_Blockchain:
         # send blocks back one by one
         bc_length = blockchains_collection.main_blockchain.length
-        for block in blockchains_collection.main_blockchain.block_chain:
+        for block in blockchains_collection.main_blockchain.block_chain[1:]:
             # don't send genesis block, it's part of the protocol, so others will have it
             message = {"Type": MessageTypes.Get_Blockchain_Response, "Block_Index": block.index,
                         "Miner_PK": block.miner_pk, "Prev_Hash": block.prev_hash, "Num_Blocks_Left_To_Come": bc_length-block.index-1,
