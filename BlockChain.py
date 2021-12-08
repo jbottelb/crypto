@@ -163,9 +163,7 @@ class BlockChain:
         # add transcations
         if genesis == True:
             for T in block["Transactions"]:
-                self.user_balances[T.recipient] += int(T.amount)
-                self.user_balances[T.sender] -= int(T.amount)
-                self.accepted_transactions.add(T.tid)
+                self.user_balances[T[0]] += int(T[1])
         else:
             for T in block.transactions:
                 self.user_balances[T.recipient] += int(T.amount)
