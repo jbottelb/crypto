@@ -196,17 +196,17 @@ class BlockChainCollection:
             self.main_blockchain = bc_fork.copy()
             # add the fork to our dictionary of forks, with a key that stores
             # the hash of its last block
-            self.blockchain_forks[bc_fork.block_chain[-1].hash] = bc_fork.copy()
+            self.blockchain_forks[bc_fork.get_last_hash()] = bc_fork.copy()
             return 2
         elif len(bc_fork.block_chain) > self.main_blockchain.length:
             # new fork is longer than current main fork, so make it our main fork
             self.main_blockchain = bc_fork.copy()
             # add fork to our dict of forks
-            self.blockchain_forks[bc_fork.block_chain[-1].hash] = bc_fork.copy()
+            self.blockchain_forks[bc_fork.get_last_hash()] = bc_fork.copy()
             return 2
         else:
             # just add the fork to our dict of forks
-            self.blockchain_forks[bc_fork.block_chain[-1].hash] = bc_fork.copy()
+            self.blockchain_forks[bc_fork.get_last_hash()] = bc_fork.copy()
             return 1
 
     def print_main_fork(self):
