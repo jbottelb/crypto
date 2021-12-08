@@ -26,3 +26,9 @@ To run various testing scripts\
 `python3 BlockChainTesting.py`\
 `python3 RSA_Keys.py`\
 `python3 Transcation.py`
+
+Sample Input for the CLI:
+Loads Josh's Keys and sends Brad 10 Coin
+---> l Josh_Keys.json
+---> t 10
+---> Brad
