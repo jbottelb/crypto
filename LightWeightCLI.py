@@ -13,18 +13,11 @@ from MessageTypes import MessageTypes
 import socket
 from Crypto.Math._IntegerGMP import IntegerGMP
 
-BLOCKCHAIN_COPY = None
-try:
-    URL = (sys.argv[1], int(sys.argv[2]))
-except Exception as e:
-    print(e)
-    exit(1)
-
 def prompt():
     print("                                         \n\
 Choose one of these options:                        \n\
     g (filename) generate wallet file              \n\
-    l (filename) load that wallet file             \n\
+    l (filename) load wallet file                   \n\
     t (recipient pk) (amount) send a transaction   \n\
     b check balance of the loaded wallet           \n\
     u update blockchain                            \n\
@@ -35,7 +28,7 @@ Choose one of these options:                        \n\
 def load_wallet(filename):
     with open(filename) as f:
         data = json.load(f)
-        print("Wallet loaded from file", filename)
+        print("\nWallet loaded from file", filename)
         return Wallet([data["pk"], data["sk"]])
 
 def generate_wallet(filename):
@@ -46,16 +39,24 @@ def generate_wallet(filename):
         json.dump(d, f)
     print("New keys stored in file", filename)
 
-def create_and_send_transaction(wallet, recipient, amount):
+def decorate_recipient_public_key(recipient):
+    beginning = "-----BEGIN PUBLIC KEY-----"
+    ending = "-----END PUBLIC KEY-----"
+    return beginning + recipient + ending
+
+
+def create_and_send_transaction(wallet, recipient, amount, trusted_node):
     if not wallet:
         print("Load a wallet!")
         return
+    # re-decorate the recipient's public key
+    recipient = decorate_recipient_public_key(recipient)
     T = Transaction(wallet.public_key, recipient, amount)
     T.sign(wallet.secret_key)
-    send_transaction(T)
+    send_transaction(T, trusted_node)
     print("Transaction sent to Node")
 
-def send_transaction(T: Transaction):
+def send_transaction(T: Transaction, trusted_node):
     '''
     Sends a transaction to a full node
     '''
@@ -68,36 +69,95 @@ def send_transaction(T: Transaction):
     # message["Recipient_Public_Key"] = str(T.recipient)
     # message["Amount"] = T.amount
     # message["Signature"] = list(T.signature) # send bytes as array of ints
-    sock.connect(URL)
+    sock.connect(trusted_node)
     sock.settimeout(5)
     r = Utilities.sendMessage(message, True, sock=sock)
     print(r)
 
-def get_blockchain():
-    print(Utilities.getBlockchain(URL))
+def get_blockchain(trusted_node) -> BlockChain:
+    try:
+        bc = Utilities.getBlockchain(trusted_node)
+        if bc is not None:
+            print("Updated local Blockchain copy")
+            return bc
+        else:
+            print("Blockchain update could not be performed")
+            return None
+    except:
+        print("Blockchain update could not be performed")
+        return None
+        
+
+def get_wallet_balance(wallet: Wallet, blockchain_copy: BlockChain):
+    return blockchain_copy.user_balances[wallet.public_key]
 
 def main():
+
+    if len(sys.argv) != 1 and len(sys.argv) != 3:
+        print("Usage: python3 LightWeightCLI.py <trusted host> <port of trusted host>")
+        exit(-1)
+    trusted_node_provided = False
+    trusted_node = None
+    if len(sys.argv) == 3:
+        try:
+            trusted_node = (sys.argv[1], int(sys.argv[2]))
+            trusted_node_provided = True
+        except:
+            print("Usage: python3 LightWeightCLI.py <trusted host> <port on trusted host>")
+            exit(-1)
+    if trusted_node_provided:
+        if not Utilities.pingNode(trusted_node):
+            print("Trusted node not running")
+            exit(-1)
+
+    # request seed nodes if we have no trusted host to start with
+    else:
+        active_seeds = None
+        active_seeds = Utilities.getActiveSeedNodes()
+        if active_seeds is not None:
+            trusted_node = active_seeds[0]
+
+    if trusted_node is None:
+        print("Failed to find active full node")
+        exit(-1)
+
+    # start with the genesis block created
+    blockchain_copy = BlockChain()
+
     wallet = None
     choice = prompt()
     print()
     while choice != "q":
-        #try:
-        choice = choice.split(" ")
-        if choice[0] == "g":
-            generate_wallet(choice[1])
-        elif choice[0] == "l":
-            wallet = load_wallet(choice[1])
-        elif choice[0] == "t":
-            create_and_send_transaction(wallet, choice[1], choice[2])
-        elif choice[0] == "b":
-            pass
-        elif choice[0] == "u":
-            BLOCKCHAIN_COPY = get_blockchain()
-        else:
+        try:
+            choice = choice.split(" ")
+            if choice[0] == "g":
+                generate_wallet(choice[1])
+            elif choice[0] == "l":
+                wallet = load_wallet(choice[1])
+            elif choice[0] == "t":
+                if wallet is None:
+                    print("Load a valid wallet first")
+                else:
+                    create_and_send_transaction(wallet, choice[1], choice[2])
+            elif choice[0] == "b":
+                if wallet is None:
+                    print("Load a valid wallet first")
+                else:
+                    try:
+                        print()
+                        print(get_wallet_balance(wallet, blockchain_copy))
+                    except:
+                        print("Cannot get balance for wallet's public key")
+            elif choice[0] == "u":
+                bc_copy = get_blockchain(trusted_node)
+                if bc_copy is not None:
+                    blockchain_copy = bc_copy
+            else:
+                print("Invalid choice")
+            choice = prompt()
+        except:
             print("Invalid choice")
-        #except Exception as e:
-        #    print(e)
-        choice = prompt()
+            choice = prompt()
 
 if __name__=="__main__":
     main()
