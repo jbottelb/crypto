@@ -241,6 +241,9 @@ class BlockChain:
                 to_hash = block.copy()
                 del to_hash["Hash"]
                 hash = sha256(json.dumps(to_hash).encode()).hexdigest()
+                # Make sure we have the right genesis
+                if hash != Constants.GENESIS_HASH:
+                    return False
                 if not hash == block["Hash"]:
                     return False
                 for T in block["Transactions"]:
