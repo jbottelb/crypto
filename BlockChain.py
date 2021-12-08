@@ -218,7 +218,6 @@ class BlockChain:
             return False
         return True
 
-
     def get_pk_total(self, pk) -> defaultdict:
         '''
         Gets the total balance of a user throught the blockchain
@@ -275,6 +274,14 @@ class BlockChain:
         for block in self.block_chain:
             string += str(block) + "\n\n"
         return string
+
+    def copy(self):
+        copy = BlockChain()
+        for block in self.block_chain:
+            if isinstance(block, dict):
+                continue
+            copy.add_block(block)
+        return copy
 
 
 if __name__=="__main__":

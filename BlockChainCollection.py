@@ -10,7 +10,7 @@ fork and handle insertions of new blocks
 into an appropriate fork based on the
 prev_hash of the block and the block's
 validity in that fork (i.e., whether
-transactions are valid based on the 
+transactions are valid based on the
 state of that fork)
 '''
 
@@ -48,18 +48,18 @@ class BlockChainCollection:
             if block.hash == desired_hash:
                 return block
         return None
-    
+
     def try_add_block(self, new_block: Block, orphan_blocks: set, pending_transactions: set):
         '''
         Attempts to add a block to any of the existing forks.
         Adds a block to the set of orphan_blocks if it fails.
         Makes a side fork into the main fork if adding the block to
-        the side fork makes it longer than the main fork (and 
+        the side fork makes it longer than the main fork (and
         manages/updates the set of pending transactions accordingly).
-        Returns: -1 if block is invalid or already in a fork, 0 if 
-        block is an orphan, 1 if block was added to main fork, 
-        2 if the block was added to a side fork that did not become 
-        longer than the main fork, and 3 if block was added to a 
+        Returns: -1 if block is invalid or already in a fork, 0 if
+        block is an orphan, 1 if block was added to main fork,
+        2 if the block was added to a side fork that did not become
+        longer than the main fork, and 3 if block was added to a
         side fork that became the main fork as a result
         '''
 
@@ -123,7 +123,7 @@ class BlockChainCollection:
                                 pending_transactions.discard(txn)
                             common_ancestor_index = 0
                         # now handle blocks from after common_ancestor and onwards
-                        for divergent_block in self.main_blockchain.block_chain[common_ancestor_index+1:]: 
+                        for divergent_block in self.main_blockchain.block_chain[common_ancestor_index+1:]:
                             for txn in divergent_block.transactions:
                                 pending_transactions.add(txn.copy())
                         # Then we must remove all transactions in the new main branch (from common
@@ -136,11 +136,11 @@ class BlockChainCollection:
                 else:
                     # block fits onto the end of a fork, but it's not valid
                     return -1
-        
+
         # Perhaps the block doesn't fit onto the end of a fork, but rather appends
         # to a block that is now buried in one of the forks. If that block is not
         # too far back, we can make a new fork that ends with that block followed by
-        # the incoming block. It will be shorter than (or equal to) the main branch, 
+        # the incoming block. It will be shorter than (or equal to) the main branch,
         # so it may be pruned quickly as other forks grow.
         if not found_parent:
             found_buried_parent = False
@@ -182,7 +182,7 @@ class BlockChainCollection:
             # added to side fork that did not become main fork
             return 2
         return -1
-    
+
     def add_blockchain_fork(self, bc_fork: BlockChain):
         '''
         Adds a BlockChain object to the dictionary of blockchain forks.
@@ -208,7 +208,7 @@ class BlockChainCollection:
             # just add the fork to our dict of forks
             self.blockchain_forks[bc_fork.block_chain[-1].hash] = bc_fork.copy()
             return 1
-    
+
     def print_main_fork(self):
         print(self.main_blockchain)
 
@@ -223,5 +223,3 @@ class BlockChainCollection:
             if bc_last_hash != self.main_blockchain.block_chain[-1].hash:
                 print(self.blockchain_forks[bc_last_hash])
         print("---- End Side BlockChain Forks ----")
-
-

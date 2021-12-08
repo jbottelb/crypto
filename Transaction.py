@@ -45,7 +45,6 @@ class Transaction:
         self.signature = RK.sign(sk, self.to_string(False))
         return self.signature
 
-
     def to_json(self, sig=True):
         '''
         Returns a json of the transaction
@@ -70,6 +69,10 @@ class Transaction:
         Makes the json of the transcation a string
         '''
         return json.dumps(self.to_json(sig))
+
+    def copy(self):
+        copy = Transaction(self.sender, self.recipient, self.amount, self.tid, self.signature)
+        return copy
 
 if __name__=="__main__":
     # Testing
