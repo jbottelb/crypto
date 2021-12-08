@@ -15,3 +15,5 @@ class Constants():
     # if a side fork blockchain falls behind the main branch by this amount, it will be
     # discarded the next time we run a pruning function
     SIDE_BLOCKCHAIN_DIFFERENCE_FOR_PRUNING = 3
+    # The genesis hash should always be the same
+    GENESIS_HASH = "12f44f7f30883cf7109451e7cfed935825644c1cc7d33653729d5dccaf03e51c"
