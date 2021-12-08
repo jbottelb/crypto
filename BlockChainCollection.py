@@ -65,7 +65,6 @@ class BlockChainCollection:
 
         # check that the transactions in the new block are authentic
         if not new_block.verify_transaction_authenticities():
-            print("verify_transaction_authenticities failed in try_add_block")
             return -1
 
         # look at the final hashes of our current blockchain forks, check if
@@ -75,7 +74,6 @@ class BlockChainCollection:
         side_fork_became_main_fork = False
         for final_hash in self.blockchain_forks.keys():
             if new_block.prev_hash == final_hash:
-                print("AAAAAAAAA")
                 # block fits onto the end of a fork, try to add it
                 if self.blockchain_forks[final_hash].validate_block(new_block):
                     self.blockchain_forks[final_hash].add_block(new_block)
