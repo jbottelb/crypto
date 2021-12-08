@@ -220,6 +220,6 @@ class BlockChainCollection:
         print("---- Start Side BlockChain Forks ----")
         for bc_last_hash in self.blockchain_forks.keys():
             # don't print the main blockchain again
-            if bc_last_hash != self.main_blockchain.block_chain[-1].hash:
+            if bc_last_hash != self.main_blockchain.get_last_hash():
                 print(self.blockchain_forks[bc_last_hash])
         print("---- End Side BlockChain Forks ----")
