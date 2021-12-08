@@ -157,9 +157,7 @@ class BlockChain:
         Returns: True on success, False on failure
         '''
         # add transcations
-        if genesis == True:
-            pass
-        else:
+        if not genesis:
             for T in block.transactions:
                 self.user_balances[T.recipient] += int(T.amount)
                 self.user_balances[T.sender] -= int(T.amount)
