@@ -23,7 +23,8 @@ from Transaction import Transaction
 
 def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: set,
                   blockchains_collection: BlockChainCollection, connections: dict,
-                  orphan_blocks: set, pending_transactions: set, block_hashes_seen_before: set):
+                  orphan_blocks: set, pending_transactions: set, block_hashes_seen_before: set,
+                  main_sock: socket):
     '''
     Handles behavior for different message types that a full node
     expects to receive. Ignores messages that are irrelevant to
@@ -75,7 +76,7 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
             rc = blockchains_collection.try_add_block(new_block, orphan_blocks, pending_transactions)
             if rc == 1:
                 # block is in our main blockchain fork, forward block to neighbors
-                message["Previous_Message_Recipients"] = [sock.getsockname()]
+                message["Previous_Message_Recipients"] = [main_sock.getsockname()]
                 for n in neighbors:
                     Utilities.sendMessage(message, addr=n)
         else:
@@ -83,7 +84,7 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
             rc = blockchains_collection.try_add_block(new_block, orphan_blocks, pending_transactions)
             if rc == 1 or rc == 3:
                 # block is in our main blockchain fork, forward block to neigbors
-                message["Previous_Message_Recipients"].append(sock.getsockname())
+                message["Previous_Message_Recipients"].append(main_sock.getsockname())
                 for n in neighbors:
                     Utilities.sendMessage(message, addr=n)
             elif rc == 0:
@@ -113,19 +114,27 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
         prev_recipients = message["Previous_Message_Recipients"]
         new_transaction = Transaction(sender_pk, recipient_pk, amount, tid, signature)
         if new_transaction.verify_transaction_authenticity():
-            # transaction is valid, so we can broadcast it
+            # transaction is valid, so we can broadcast it after adding ourselves
+            # to the previous recipients list
+            prev_recipients.append(main_sock.getsockname())
+            message["Previous_Message_Recipients"] = prev_recipients
             for n in neighbors:
-                pass
-
-    # get_blockchain
-
-    # get_blockchain_response
-
-    # send_transaction
-
-    # send_transaction_response
-
-
+                Utilities.sendMessage(message)
+    elif msgtype == MessageTypes.Get_Blockchain:
+        # send blocks back one by one
+        bc_length = blockchains_collection.main_blockchain
+        for index, block in enumerate(blockchains_collection.main_blockchain):
+            if index == 0:
+                # send genesis block
+                message = {"Type": MessageTypes.Get_Blockchain_Response, "Block_Index": index,
+                           "Miner_PK": "", "Prev_Hash": "", "Num_Blocks_Left_To_Come": bc_length-1,
+                           "Nonce": 0, "Hash": block["Hash"], "Transactions": block["Transactions"]}
+            else:
+                # send a regular block
+                message = {"Type": MessageTypes.Get_Blockchain_Response, "Block_Index": index,
+                           "Miner_PK": block.miner_pk, "Prev_Hash": block.prev_hash, "Num_Blocks_Left_To_Come": bc_length-index-1,
+                           "Nonce": block.nonce, "Hash": block.hash, "Transactions": block.transactions}
+            Utilities.sendMessage(message, True, sock=sock, connections=connections)
 
 def ping_nodes(nodes: set):
     '''
@@ -291,7 +300,8 @@ def main():
                 message = Utilities.readMessage(sock, connections)
                 if message is not None:
                     handle_message(sock, message, neighbors, miners, blockchains_collection,
-                                   connections, orphan_blocks, pending_transactions, block_hashes_seen_before)
+                                   connections, orphan_blocks, pending_transactions, block_hashes_seen_before,
+                                   main_sock)
         # handle any issues with sockets
         for sock in exceptional:
             if sock == main_sock:
