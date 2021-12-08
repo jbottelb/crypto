@@ -7,7 +7,7 @@ from Wallet import Wallet
 class Transaction:
     def __init__(self, sender, recipient, amount, tid=None, signature=None):
         if not tid:
-            self.tid = datetime.datetime.now()
+            self.tid = str(datetime.datetime.now())
         else:
             self.tid = tid
         self.sender = sender

@@ -65,9 +65,7 @@ def send_transaction(T):
     message["Sender_Public_Key"] = str(T.sender)
     message["Recipient_Public_Key"] = str(T.recipient)
     message["Amount"] = T.amount
-    print(T.signature)
-    print(str(T.signature))
-    message["Signature"] = str(T.signature)
+    message["Signature"] = T.signature
     message["Previous_Message_Recipients"] = []
     sock.connect(URL)
     sock.settimeout(5)

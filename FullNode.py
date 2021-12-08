@@ -104,23 +104,25 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
                        "Previous_Message_Recipients": []}
             Utilities.sendMessage(message, sock=sock)
     elif msgtype == MessageTypes.Send_Transaction:
-        print("Yay transcatio")
         # when we get a transaction, just verify that it's been signed
         # correcty and then broadcast it
-        tid = message["Transaction"]
+        tid = message["Transaction_ID"]
         sender_pk = message["Sender_Public_Key"]
         recipient_pk = message["Recipient_Public_Key"]
         amount = message["Amount"]
-        signature = message["Signature"]
+        signature = message["Signature"].encode()
         prev_recipients = message["Previous_Message_Recipients"]
         new_transaction = Transaction(sender_pk, recipient_pk, amount, tid, signature)
         if new_transaction.verify_transaction_authenticity():
+            print("we are all good")
             # transaction is valid, so we can broadcast it after adding ourselves
             # to the previous recipients list
             prev_recipients.append(main_sock.getsockname())
             message["Previous_Message_Recipients"] = prev_recipients
             for n in neighbors:
                 Utilities.sendMessage(message)
+        else:
+            print("we are not so good")
     elif msgtype == MessageTypes.Get_Blockchain:
         print("Blockchain handling")
         # send blocks back one by one

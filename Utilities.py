@@ -75,10 +75,10 @@ class Utilities:
             if not recipient_key or type(recipient_key) != str:
                 return False
             amount = message.get("Amount", 0)
-            if not amount or type(amount) != int:
+            if not amount or type(int(amount)) != int:
                 return False
             signature = message.get("Signature", 0)
-            if not signature or type(signature) != str:
+            if not signature:
                 return False
             prev_recipients = message.get("Previous_Message_Recipients", -1)
             if prev_recipients == -1 or type(prev_recipients) != list:
