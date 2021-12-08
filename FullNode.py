@@ -25,7 +25,7 @@ from Transaction import Transaction
 def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: set,
                   blockchains_collection: BlockChainCollection, connections: dict,
                   orphan_blocks: set, pending_transactions: set, block_hashes_seen_before: set,
-                  main_sock: socket):
+                  main_sock: socket, currently_mining: bool, transactions_being_mined: set):
     '''
     Handles behavior for different message types that a full node
     expects to receive. Ignores messages that are irrelevant to
@@ -105,8 +105,9 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
                        "Previous_Message_Recipients": []}
             Utilities.sendMessage(message, sock=sock)
     elif msgtype == MessageTypes.Send_Transaction:
-        # when we get a transaction, just verify that it's been signed
-        # correcty and then broadcast it
+        # When we get a transaction, verify that it's been signed
+        # correcty and then broadcast it. If we aren't mining right now,
+        # and we now have TPB pending_transactions, start mining.
         tid = message["Transaction_ID"]
         sender_pk = message["Sender_Public_Key"]
         recipient_pk = message["Recipient_Public_Key"]
@@ -147,6 +148,35 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
             # transaction not authentic -> not valid
             response = {"Type": MessageTypes.Send_Transaction_Response, "Valid": "No"}
             Utilities.sendMessage(response, False, sock=sock)
+        
+        # if we aren't mining right now, send a block to miners with up to
+        # TPB pending_transactions
+        if not currently_mining:
+            temp_user_balances = blockchains_collection.main_blockchain.user_balances.copy()
+            transactions_obj_list = [] 
+            transactions_json_list = []
+            for txn in pending_transactions:
+                if len(transactions_json_list) == Constants.TPB:
+                    continue
+                # keep a running total of user balances as we determine the next
+                # transactions to send to the miner (so that our block isn't
+                # inherently inconsistent when we mine it)
+                if txn.amount < temp_user_balances[txn.sender]:
+                    temp_user_balances[txn.sender] -= txn.amount
+                    transactions_obj_list.append(txn)
+                    transactions_json_list.append(txn.to_json())
+            prev_hash = blockchains_collection.main_blockchain.get_last_hash()
+            block_index = blockchains_collection.main_blockchain.length
+            message = {"Type": MessageTypes.Start_New_Block, "Transactions": transactions_json_list,
+                       "Prev_Hash": prev_hash, "Block_Index": block_index}
+            if len(transactions_json_list) > 0:
+                for miner in miners:
+                    # send this start_new_block message to all of our miners
+                    miner_string = f"{miner[0]}:{miner[1]}"
+                    miner_sock = [sock for sock in connections.keys() if connections[sock] == miner_string][0]
+                    Utilities.sendMessage(message, True, miner, miner_sock, connections)
+                currently_mining = True
+                transactions_being_mined = transactions_obj_list
 
     elif msgtype == MessageTypes.Get_Blockchain:
         # send blocks back one by one
@@ -206,6 +236,10 @@ def main():
     orphan_blocks = set()
     # create set of block hashes that we have seen before
     block_hashes_seen_before = set()
+    # tells us whether we are waiting on miners for a block
+    currently_mining = False
+    # stores which transactions we are currently trying to mine
+    transactions_being_mined = set()
 
     # handle having a trusted host to start with (As a full node)
     if trusted_host is not None:
@@ -321,7 +355,7 @@ def main():
                 if message is not None:
                     handle_message(sock, message, neighbors, miners, blockchains_collection,
                                    connections, orphan_blocks, pending_transactions, block_hashes_seen_before,
-                                   main_sock)
+                                   main_sock, currently_mining, transactions_being_mined)
         # handle any issues with sockets
         for sock in exceptional:
             if sock == main_sock:
@@ -345,9 +379,6 @@ def main():
                 except:
                     pass
                 del connections[sock]
-
-        # TODO: update pending_transactions pool if a block was found and send
-        #       new start_new_block message to miners
 
 if __name__ == "__main__":
     main()
