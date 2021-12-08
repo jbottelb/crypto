@@ -11,7 +11,7 @@ To run the system to the farthest we got it,
 Run a Full Node \
 `python3 FullNode.py <portnum>`\
 Then run a miner to connect to that Node \
-`python3 Miner.py <Full Node Name> <Full Node Port Number>`\
+`python3 Miner.py miner_publickey <Full Node Name> <Full Node Port Number>`\
 Then run the LightWeightCLI \
 `python3 LightweightCLI.py <Full Node Name> <Full Node Port Number>`
 
@@ -19,6 +19,7 @@ Then run the LightWeightCLI \
 With the CLI You can then create and then load a wallet, or just use one of ours, and then send transactions to the full node.
 For easier use, you can just send transactions to anythings as the public key
 because public keys can technically be anything, and since no one will use the received money it does not matter.
+Miner Public key can also be anything
 
 ### Testing
 To run various testing scripts\
