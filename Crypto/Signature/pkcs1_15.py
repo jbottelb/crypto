@@ -80,6 +80,7 @@ class PKCS115_SigScheme:
         # Step 2b (RSASP1)
         m_int = self._key._decrypt(em_int)
         # Step 2c (I2OSP)
+        
         signature = long_to_bytes(m_int, k)
         return signature
 
