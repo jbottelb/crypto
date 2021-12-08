@@ -18,6 +18,7 @@ from BlockChain import BlockChain, Block
 import time
 from Constants import Constants
 from BlockChainCollection import BlockChainCollection
+from Transaction import Transaction
 
 
 def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: set,
@@ -101,8 +102,20 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
                        "Nonce": block.nonce, "Hash": block.hash, "Transactions": block.transactions,
                        "Previous_Message_Recipients": []}
             Utilities.sendMessage(message, sock=sock)
-
-    # elif msgtype == MessageTypes.
+    elif msgtype == MessageTypes.Send_Transaction:
+        # when we get a transaction, just verify that it's been signed
+        # correcty and then broadcast it
+        tid = message["Transaction"]
+        sender_pk = message["Sender_Public_Key"]
+        recipient_pk = message["Recipient_Public_Key"]
+        amount = message["Amount"]
+        signature = message["Signature"]
+        prev_recipients = message["Previous_Message_Recipients"]
+        new_transaction = Transaction(sender_pk, recipient_pk, amount, tid, signature)
+        if new_transaction.verify_transaction_authenticity():
+            # transaction is valid, so we can broadcast it
+            for n in neighbors:
+                pass
 
     # get_blockchain
 
@@ -119,10 +132,13 @@ def ping_nodes(nodes: set):
     Pings the nodes specified in the provided set. If they aren't alive,
     removes them from the set.
     '''
+    nodes_to_remove = []
     for node in nodes:
         rc = Utilities.pingNode(node)
         if not rc:
-            nodes.discard(node)
+            nodes_to_remove.append(node)
+    for node in nodes_to_remove:
+        nodes.discard(node)
 
 def main():
 
