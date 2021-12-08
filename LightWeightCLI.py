@@ -8,28 +8,29 @@ from Transaction import Transaction
 from RSA_Keys import RSA_Keys as RK
 from Wallet import Wallet
 import json
+from Utilities import Utilities
+from MessageTypes import MessageTypes
+import socket
 
-WALLET          = None
 BLOCKCHAIN_COPY = None
 
 def prompt():
     print("                                         \n\
 Choose one of these options:                        \n\
-    -g (filename) generate wallet file              \n\
-    -l (filename) load that wallet file             \n\
-    -t (recipient pk) (amount) send a transaction   \n\
-    -b check balance of the loaded wallet           \n\
-    -u update blockchain                            \n\
-    -q quit                                         \n\
+    g (filename) generate wallet file              \n\
+    l (filename) load that wallet file             \n\
+    t (recipient pk) (amount) send a transaction   \n\
+    b check balance of the loaded wallet           \n\
+    u update blockchain                            \n\
+    q quit                                         \n\
     ")
     return input("----> ")
 
 def load_wallet(filename):
     with open(filename) as f:
         data = json.load(f)
-        WALLET = Wallet([data["pk"], data["sk"]])
-    print("Wallet loaded from file", filename)
-
+        print("Wallet loaded from file", filename)
+        return Wallet([data["pk"], data["sk"]])
 
 def generate_wallet(filename):
     d = {}
@@ -39,12 +40,12 @@ def generate_wallet(filename):
         json.dump(d, f)
     print("New keys stored in file", filename)
 
-def create_and_send_transaction(recipient, amount):
-    if not WALLET:
+def create_and_send_transaction(wallet, recipient, amount):
+    if not wallet:
         print("Load a wallet!")
         return
-    T = Transaction(WALLET.public_key, recipient, amount)
-    T.sign(WALLET.private_key)
+    T = Transaction(wallet.public_key, recipient, amount)
+    T.sign(wallet.secret_key)
     send_transaction(T)
     print("Transaction sent to Node")
 
@@ -52,17 +53,27 @@ def send_transaction(T):
     '''
     Sends a transaction to a full node
     '''
-    pass
+    message = {"Type": MessageTypes.Send_Transaction}
 
-def connect_to_fullnode():
-    '''
-    Connects to a fullnode
-    '''
-    return None
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    message["Transaction_ID"] = T.tid
+    message["Sender_Public_Key"] = T.sender
+    message["Recipient_Public_Key"] = T.recipient
+    message["Amount"] = T.amount
+    message["Signature"] = T.signature
+    message["Previous_Message_Recipients"] = []
+    sock.connect(("localhost", 8400))
+    Utilities.sendMessage(message, True, sock=sock)
+    sock.settimeout(5)
+    response = Utilities.readMessage(sock)
+    if response is not None:
+        if response.get("Type", 0) != MessageTypes.Join_As_Miner_Response or response.get("Decision", '') != "Yes":
+            print("Should have gotten an affirmative join as miner response")
+            return 0
+    return 1
 
 def main():
-    # Connect to a Node
-    connection = connect_to_fullnode()
+    wallet = None
     choice = prompt()
     while choice != "q":
         #try:
@@ -70,9 +81,9 @@ def main():
         if choice[0] == "g":
             generate_wallet(choice[1])
         elif choice[0] == "l":
-            load_wallet(choice[1])
+            wallet = load_wallet(choice[1])
         elif choice[0] == "t":
-            pass
+            create_and_send_transaction(wallet, choice[1], choice[2])
         elif choice[0] == "b":
             pass
         elif choice[0] == "u":
