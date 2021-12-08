@@ -11,6 +11,7 @@ import select
 import sys
 import socket
 from MessageTypes import MessageTypes
+import random
 
 N = 500000 # determines number of nonce values to test before
           # pausing mining to listen for new messages
@@ -79,6 +80,7 @@ class Miner:
                     print(e)
                     block = None
             elif hash:
+                print("Found hash and sending block")
                 # We found a hash before receiving a new block to mine; send back block
                 message = {"Type": MessageTypes.Send_Block, "Block_Index": block.index, "Miner_PK": self.pk,
                             "Prev_Hash": block.prev_hash, "Nonce": block.nonce, "Hash": hash,
@@ -117,6 +119,8 @@ class Miner:
         '''
         i = 0
 
+        self.block.nonce = random.randint(0, Constants.DIFFICULTY * 100000000)
+
         hash = sha256(self.block.string_for_mining().encode()).hexdigest()
         while not hash.startswith(self.difficulty * "0"):
             # only mine a select number of times
@@ -128,7 +132,7 @@ class Miner:
             hash = sha256(self.block.string_for_mining().encode()).hexdigest()
         self.block.hash = hash
         return hash
-    
+
     @staticmethod
     def decorate_miner_public_key(miner_pk):
         beginning = "-----BEGIN PUBLIC KEY-----"
