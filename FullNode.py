@@ -259,6 +259,7 @@ def main():
 
         # listen for a second for a readable socket
         readable, writeable, exceptional = select.select(connections.keys(), [], [], 1)
+        
         for sock in readable:
             # main socket has bytes to read, means we should accept
             # an incoming connection and store a socket for it
