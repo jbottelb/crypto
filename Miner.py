@@ -27,7 +27,7 @@ class Miner:
         self.difficulty = d
 
     # connect to the provided full node
-    def connect_to_node(self, parent: socket.socket):
+    def join_as_miner(self, parent: socket.socket):
         '''
         Attempts to join the full node as a miner.
         Returns: 1 if successful, 0 otherwise
@@ -43,11 +43,11 @@ class Miner:
         return 1
 
 
-    def run(self, URL):
+    def run(self, full_node_addr: tuple):
         parent = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        parent.connect(URL)
+        parent.connect(full_node_addr)
         try:
-            rc = self.connect_to_node(parent)
+            rc = self.join_as_miner(parent)
             if rc == 0:
                 # issue connecting to full node as miner
                 parent.close()
@@ -74,7 +74,7 @@ class Miner:
                     block_index = res.get("Block_Index", -1)
                     block = Block(block_index, previous_hash, '')
                     for t in transactions:
-                        block.add_transaction(t)
+                        block.add_transaction(Utilities.transactionDictToObject(t))
                 except Exception as e:
                     print(e)
                     block = None
@@ -116,7 +116,7 @@ class Miner:
         '''
         i = 0
 
-        hash = sha256(str(self.block).encode()).hexdigest()
+        hash = sha256(self.block.string_for_mining().encode()).hexdigest()
         while not hash.startswith(self.difficulty * "0"):
             # only mine a select number of times
             if iterations:
@@ -127,14 +127,20 @@ class Miner:
             hash = sha256(self.block.string_for_mining().encode()).hexdigest()
         self.block.hash = hash
         return hash
+    
+    @staticmethod
+    def decorate_miner_public_key(miner_pk):
+        beginning = "-----BEGIN PUBLIC KEY-----"
+        ending = "-----END PUBLIC KEY-----"
+        return beginning + miner_pk + ending
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
+    if len(sys.argv) != 4:
         print("Usage: python3 Miner.py <Miner public key> <Full node host> <Full node port>")
-    miner_pk = sys.argv[1]
+    miner_pk = Miner.decorate_miner_public_key(sys.argv[1])
     host = sys.argv[2]
     port = sys.argv[3]
-    URL = (host, int(port))
+    full_node_addr = (host, int(port))
     miner = Miner(miner_pk)
     miner.block = Block("0", "0", miner_pk)
-    miner.run(URL)
+    miner.run(full_node_addr)

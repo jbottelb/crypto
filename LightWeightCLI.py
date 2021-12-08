@@ -54,6 +54,7 @@ def create_and_send_transaction(wallet, recipient, amount, trusted_node):
     T = Transaction(wallet.public_key, recipient, amount)
     T.sign(wallet.secret_key)
     try:
+        print("calling send_transaction")
         send_transaction(T, trusted_node)
     except:
         pass
@@ -62,6 +63,7 @@ def send_transaction(T: Transaction, trusted_node):
     '''
     Sends a transaction to a full node
     '''
+    print("Got to send_transaction")
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     message = T.to_json(sig=True)
     message["Type"] = MessageTypes.Send_Transaction
@@ -127,13 +129,15 @@ def main():
         if not Utilities.pingNode(trusted_node):
             print("Trusted node not running")
             exit(-1)
+        else:
+            print("Trusted node is active")
 
     # request seed nodes if we have no trusted host to start with
     else:
         active_seeds = None
         active_seeds = Utilities.getActiveSeedNodes()
         if active_seeds is not None:
-            trusted_node = active_seeds[0]
+            trusted_node = tuple(active_seeds[0])
 
     if trusted_node is None:
         print("Failed to find active full node")

@@ -22,6 +22,59 @@ from Transaction import Transaction
 # from Crypto.Math._IntegerGMP import IntegerGMP
 
 
+def try_start_mining_new_block(currently_mining: bool, transactions_being_mined: set,
+                               miners: set, pending_transactions: set, connections: dict, 
+                               blockchains_collection: BlockChainCollection):
+    '''
+    This function is called when our handle_message function determines
+    that we need to start mining a new block. Happens in three cases:
+        1) We got a new transaction, and we weren't previously mining
+        2) We got a new block, and it came from our miner (whether it's 
+           now valid or not)
+        3) We got a new block, and it came from another full node and
+           becomes part of our main branch
+    '''
+    print("in try_start_mining_new_block")
+    # Try to start mining a new block
+    temp_user_balances = blockchains_collection.main_blockchain.user_balances.copy()
+    transactions_obj_list = [] 
+    transactions_json_list = []
+    for txn in pending_transactions:
+        if len(transactions_json_list) == Constants.TPB:
+            break
+        # keep a running total of user balances as we determine the next
+        # transactions to send to the miner (so that our block isn't
+        # inherently inconsistent when we mine it)
+        if txn.amount < temp_user_balances[txn.sender]:
+            temp_user_balances[txn.sender] -= txn.amount
+            transactions_obj_list.append(txn)
+            transactions_json_list.append(txn.to_json())
+    print("got here in tsmnb 1")
+    if len(transactions_json_list) > 0:
+        prev_hash = blockchains_collection.main_blockchain.get_last_hash()
+        block_index = blockchains_collection.main_blockchain.length
+        message = {"Type": MessageTypes.Start_New_Block, "Transactions": transactions_json_list,
+                    "Prev_Hash": prev_hash, "Block_Index": block_index}
+        print(f"miners right before looping over them: {miners}")
+        for miner in miners:
+            print(f"miner: {miner}")
+            # send this start_new_block message to all of our miners
+            miner_string = f"{miner[0]}:{miner[1]}"
+            miner_sock = None
+            try:
+                # the socket with our miner still exists, use it
+                miner_sock = [sock for sock in connections.keys() if connections[sock] == miner_string][0]
+                Utilities.sendMessage(message, True, miner, miner_sock, connections)
+                print("sent message using original miner socket")
+            except:
+                # try a new socket with our miner
+                Utilities.sendMessage(message, True, miner, None, connections)
+                print("sent message using a new miner socket")
+        print("got here in tsmnb 2")
+        currently_mining = True
+        transactions_being_mined = transactions_obj_list
+
+
 def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: set,
                   blockchains_collection: BlockChainCollection, connections: dict,
                   orphan_blocks: set, pending_transactions: set, block_hashes_seen_before: set,
@@ -50,6 +103,7 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
         miner_addr = connections[sock].split(":")
         miner_addr_tuple = (miner_addr[0], int(miner_addr[1]))
         miners.add(miner_addr_tuple)
+        print(f"miners set after we added the new miner: {miners}")
         # send decision to miner so it knows we accepted it and will send
         # tasks its way soon; keep socket open and save it
         Utilities.sendMessage(response, True, sock=sock, connections=connections)
@@ -80,6 +134,10 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
                 message["Previous_Message_Recipients"] = [main_sock.getsockname()]
                 for n in neighbors:
                     Utilities.sendMessage(message, addr=n)
+
+            try_start_mining_new_block(currently_mining, transactions_being_mined, miners, pending_transactions,
+                                       connections, blockchains_collection)
+
         else:
             # Otherwise, the block is coming from a full node. Try to add it to a blockchain fork.
             rc = blockchains_collection.try_add_block(new_block, orphan_blocks, pending_transactions)
@@ -93,6 +151,12 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
                 message = {"Type": MessageTypes.Get_Block, "Hash": new_block.hash}
                 for n in neighbors:
                     Utilities.sendMessage(message, addr=n)
+
+            # start mining a new block if the incoming block adds onto our main chain
+            if rc == 1 or rc == 3:
+                try_start_mining_new_block(currently_mining, transactions_being_mined, miners, pending_transactions,
+                                           connections, blockchains_collection)
+
     elif msgtype == MessageTypes.Get_Block:
         desired_block_hash = message["Hash"]
         # try to find the block in our blockchains collection
@@ -152,31 +216,10 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
         # if we aren't mining right now, send a block to miners with up to
         # TPB pending_transactions
         if not currently_mining:
-            temp_user_balances = blockchains_collection.main_blockchain.user_balances.copy()
-            transactions_obj_list = [] 
-            transactions_json_list = []
-            for txn in pending_transactions:
-                if len(transactions_json_list) == Constants.TPB:
-                    continue
-                # keep a running total of user balances as we determine the next
-                # transactions to send to the miner (so that our block isn't
-                # inherently inconsistent when we mine it)
-                if txn.amount < temp_user_balances[txn.sender]:
-                    temp_user_balances[txn.sender] -= txn.amount
-                    transactions_obj_list.append(txn)
-                    transactions_json_list.append(txn.to_json())
-            prev_hash = blockchains_collection.main_blockchain.get_last_hash()
-            block_index = blockchains_collection.main_blockchain.length
-            message = {"Type": MessageTypes.Start_New_Block, "Transactions": transactions_json_list,
-                       "Prev_Hash": prev_hash, "Block_Index": block_index}
-            if len(transactions_json_list) > 0:
-                for miner in miners:
-                    # send this start_new_block message to all of our miners
-                    miner_string = f"{miner[0]}:{miner[1]}"
-                    miner_sock = [sock for sock in connections.keys() if connections[sock] == miner_string][0]
-                    Utilities.sendMessage(message, True, miner, miner_sock, connections)
-                currently_mining = True
-                transactions_being_mined = transactions_obj_list
+            print("Calling try_start_mining_new_block")
+            try_start_mining_new_block(currently_mining, transactions_being_mined, miners, pending_transactions,
+                                       connections, blockchains_collection)
+            
 
     elif msgtype == MessageTypes.Get_Blockchain:
         # send blocks back one by one
@@ -202,6 +245,7 @@ def ping_nodes(nodes: set, self_address: tuple):
         if not rc:
             nodes_to_remove.append(node)
     for node in nodes_to_remove:
+        print(f"Discarding inactive node: {node}")
         nodes.discard(node)
 
 def main():
@@ -228,7 +272,7 @@ def main():
             
     # stores (hostname, port) pairs of other full nodes in the system
     neighbors = set()
-    # stores (hostname, port) paris of miners that are working for it
+    # stores (hostname, port) pairs of miners that are working for it
     miners = set()
     # set of pending transactions (i.e., not yet added to blockchain)
     pending_transactions = set()
