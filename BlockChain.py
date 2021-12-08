@@ -199,7 +199,7 @@ class BlockChain:
                     return False
         # index (which started at zero) of a new block should be the
         # same value as the current length of the chain
-        if block.index != self.length-1:
+        if block.index != self.length:
             return False
         hash = sha256(block.string_for_mining().encode()).hexdigest()
         # the hash we get from the block's string representation should
