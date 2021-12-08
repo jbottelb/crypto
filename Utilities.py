@@ -456,7 +456,7 @@ class Utilities:
         message = {"Type": MessageTypes.Get_Blockchain}
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect(neighbor)
-        rc = Utilities.sendMessage(message, neighbor, sock=sock)
+        rc = Utilities.sendMessage(message, True, neighbor, sock=sock, connections=dict())
         if not rc:
             # issue sending message
             return None
