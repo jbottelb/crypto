@@ -223,3 +223,4 @@ class BlockChainCollection:
             if bc_last_hash != self.main_blockchain.get_last_hash():
                 print(self.blockchain_forks[bc_last_hash])
         print("---- End Side BlockChain Forks ----")
+        print("\n")

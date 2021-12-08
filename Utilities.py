@@ -471,7 +471,7 @@ class Utilities:
         sock.settimeout(5)
         response = Utilities.readMessage(sock)
         if response is None:
-            print("Request for Blockchain timed out.")
+            print("Request for Blockchain timed out")
             # issue with response from neighbor
             return None
         # handle responses from full node

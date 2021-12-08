@@ -115,12 +115,22 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
         prev_recipients = message["Previous_Message_Recipients"]
         new_transaction = Transaction(sender_pk, recipient_pk, amount, tid, signature)
         if new_transaction.verify_transaction_authenticity():
+            print(f"Valid transaction recieved. TID: {tid}")
             # transaction is valid, so we can broadcast it after adding ourselves
-            # to the previous recipients list
-            prev_recipients.append(main_sock.getsockname())
-            message["Previous_Message_Recipients"] = prev_recipients
-            for n in neighbors:
-                Utilities.sendMessage(message)
+            # to the previous recipients list (as long as we haven't seen this
+            # transaction before)
+
+            # compare to pending_transactions
+            for txn in pending_transactions:
+                if tid == txn.tid:
+                    return
+            # compare to accepted transactions in our main blockchain fork
+            if tid not in blockchains_collection.main_blockchain.accepted_transactions:
+                # not seen before
+                prev_recipients.append(main_sock.getsockname())
+                message["Previous_Message_Recipients"] = prev_recipients
+                for n in neighbors:
+                    Utilities.sendMessage(message)
     elif msgtype == MessageTypes.Get_Blockchain:
         # send blocks back one by one
         bc_length = blockchains_collection.main_blockchain.length
@@ -131,13 +141,16 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
                         "Nonce": block.nonce, "Hash": block.hash, "Transactions": [txn.to_json() for txn in block.transactions]}
             Utilities.sendMessage(message, True, sock=sock, connections=connections)
 
-def ping_nodes(nodes: set):
+def ping_nodes(nodes: set, self_address: tuple):
     '''
     Pings the nodes specified in the provided set. If they aren't alive,
     removes them from the set.
     '''
     nodes_to_remove = []
     for node in nodes:
+        if node == self_address:
+            # don't ping yourself
+            continue
         rc = Utilities.pingNode(node)
         if not rc:
             nodes_to_remove.append(node)
@@ -146,26 +159,26 @@ def ping_nodes(nodes: set):
 
 def main():
 
-    if len(sys.argv) < 2 or len(sys.argv) > 5:
-        print("Usage: FullNode.py <port> [--trusted <trusted_hostname:port> <--seed>]\n 'seed' forces seed behavior (i.e., generates a genesis block")
+    if len(sys.argv) < 2 or len(sys.argv) > 4:
+        print("Usage: FullNode.py <port> [--trusted <trusted_hostname:port>]")
         exit(-1)
-
-    if len(sys.argv) == 3:
-        if sys.argv[2] != "--seed":
-            print("Usage: FullNode.py <port> [--trusted <trusted_hostname:port> | <--seed>]\n 'seed' forces seed behavior (i.e., generates a genesis block")
 
     port = int(sys.argv[1])
     trusted_host = None
-    if "--trusted" in sys.argv:
-        # read in and store trusted host
-        try:
-            trusted_host = sys.argv[3]
-            trusted_host = trusted_host.split(":")
-            trusted_host = (trusted_host[0], int(trusted_host[1]))
-        except:
-            print("Usage: FullNode.py <port> [--trusted <trusted_hostname:port> | <--seed>]\n 'seed' forces seed behavior (i.e., generates a genesis block")
+    if len(sys.argv) > 2:
+        if sys.argv[2] == "--trusted":
+            # read in and store trusted host
+            try:
+                trusted_host = sys.argv[3]
+                trusted_host = trusted_host.split(":")
+                trusted_host = (trusted_host[0], int(trusted_host[1]))
+            except:
+                print("Usage: FullNode.py <port> [--trusted <trusted_hostname:port>]")
+                exit(-1)
+        else:
+            print("Usage: FullNode.py <port> [--trusted <trusted_hostname:port>]")
             exit(-1)
-
+            
     # stores (hostname, port) pairs of other full nodes in the system
     neighbors = set()
     # stores (hostname, port) paris of miners that are working for it
@@ -210,47 +223,44 @@ def main():
 
     # handle case where we found no neighbors
     if len(neighbors) == 0:
-        print("No active full nodes discovered")
-
-    # TODO: print(neighbors)
+        print("No neighbors discovered")
+    else:
+        print(f"{len(neighbors)} neighbors discovered: {neighbors}")
 
     # The blockchains_collection will hold multiple forks of the blockchain
     # (if needed) and abstract the appending of blocks
     blockchains_collection = BlockChainCollection()
-    # create a blockchain and a genesis block if this node is to act as a seed node
-    if "--seed" or "-s" in sys.argv:
-        # create personal copy of longest blockchain (more may be stored later);
-        # note that this blockchain fork will generate its own genesis block because
-        # no data is passed in
-        bc = BlockChain()
-        blockchains_collection.add_blockchain_fork(bc)
-    else:
-        # otherwise, get blockchains from neighbors and make the longest
-        # one our active fork (also store other forks of equal length)
-        longest_bc_length = 0
-        longest_bc = None
-        tied_length_blockchains = []
-        for n in neighbors:
-            # TODO: check if this is working
-            bc = Utilities.getBlockchain(n)
-            if not bc:
-                continue
-            if len(bc.block_chain) > longest_bc:
-                # found a new longest fork, store this one for now
-                longest_bc = bc
-                longest_bc = bc.length
-            elif len(bc.block_chain) == longest_bc:
-                # found a fork with same length as current longest
-                # fork, store it as well
-                tied_length_blockchains.append(bc)
+    # create a blockchain with a genesis block (this block is defined by
+    # the protocol, so any new full node can create it)
+    bc = BlockChain()
+    blockchains_collection.add_blockchain_fork(bc)
+    
+    # try to get blockchains from neighbors and make the longest
+    # one our active fork (also store other forks of equal length)
+    longest_bc_length = 0
+    longest_bc = None
+    tied_length_blockchains = []
+    for n in neighbors:
+        bc = Utilities.getBlockchain(n)
+        if not bc:
+            continue
+        if len(bc.block_chain) > longest_bc:
+            # found a new longest fork, store this one for now
+            longest_bc = bc
+            longest_bc_length = bc.length
+        elif len(bc.block_chain) == longest_bc:
+            # found a fork with same length as current longest
+            # fork, store it as well
+            tied_length_blockchains.append(bc)
+    # store the longest blockchain fork in our blockchain collection
+    if longest_bc is not None:
         blockchains_collection.add_blockchain_fork(longest_bc)
-        # store all the longest blockchain forks in our blockchain collection
-        for tlbc in tied_length_blockchains:
-            # the longest blockchain could have changed, so check lengths again
-            if tlbc.length == longest_bc_length:
-                blockchains_collection.add_blockchain_fork(tlbc)
+    # store all other blockchain forks of equal lenth in our blockchain collection
+    for tlbc in tied_length_blockchains:
+        # the longest blockchain could have changed, so check lengths again
+        if tlbc.length == longest_bc_length:
+            blockchains_collection.add_blockchain_fork(tlbc)
 
-    # TODO:
     blockchains_collection.print_forks()
 
     main_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -268,8 +278,8 @@ def main():
         # ping neighbor and miner nodes at the specified interval to determine which are active
         if int(time.time() - latest_ping) > int(Constants.NEIGHBOR_PING_INTERVAL) or first_ping:
             # remove nodes from the sets if they aren't active anymore
-            ping_nodes(neighbors)
-            ping_nodes(miners)
+            ping_nodes(neighbors, main_sock.getsockname())
+            ping_nodes(miners, main_sock.getsockname())
             first_ping = False
             latest_ping = time.time()
 
