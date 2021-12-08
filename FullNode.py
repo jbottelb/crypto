@@ -117,6 +117,7 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
         transactions = [Utilities.transactionDictToObject(txn) for txn in message["Transactions"]]
         new_block = Block(message["Block_Index"], message["Prev_Hash"], message["Miner_PK"],
                           message["Nonce"], transactions, message["Hash"])
+        print("MADE NEW BLOCK OUT OF SEND_BLOCK MESSAGE FROM MINER")
         if sock.getpeername() in miners:
             # Block came from miner. If all transactions included in the block are still in
             # pending_transactions, then we know that this miner is our first miner to solve the hash,
@@ -124,11 +125,18 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
             # aren't in pending_transactions, then we've either gotten a valid block from another full node
             # with some of the transactions included already, OR another one of our miners already
             # mined a block with some of those transactions, and so we should discard the block.
+            print(f"PENDING_TRANSACTIONS: {[pt for pt in pending_transactions]}")
+            print(f"transactions in mined block: {[t for t in transactions]}")
             for txn in transactions:
-                if txn not in pending_transactions:
+                print(f"txn in transactions: {txn}")
+                pending_transaction_tids = [t.tid for t in pending_transactions]
+                if txn.tid not in pending_transaction_tids:
+                    print("TXN NOT IN PENDING_TRANSACTIONS")
                     return
             # Try to add it if valid
+            print("TRY_ADD_BLOCK")
             rc = blockchains_collection.try_add_block(new_block, orphan_blocks, pending_transactions)
+            print(f"JUST DID TRY_ADD_BLOCK, HERE IS RC: {rc}, HERE IS PENDING_TRANSACTIONS: {pending_transactions}")
             if rc == 1:
                 # block is in our main blockchain fork, forward block to neighbors
                 message["Previous_Message_Recipients"] = [main_sock.getsockname()]
@@ -245,7 +253,7 @@ def ping_nodes(nodes: set, self_address: tuple):
         if not rc:
             nodes_to_remove.append(node)
     for node in nodes_to_remove:
-        print(f"Discarding inactive node: {node}")
+        print(f"Discarding inactive connection: {node}")
         nodes.discard(node)
 
 def main():
@@ -370,11 +378,22 @@ def main():
     while 1:
         # ping neighbor and miner nodes at the specified interval to determine which are active
         if int(time.time() - latest_ping) > int(Constants.NEIGHBOR_PING_INTERVAL) or first_ping:
-            # remove nodes from the sets if they aren't active anymore
+            # remove neighbors from the set if they aren't active anymore
             ping_nodes(neighbors, main_sock.getsockname())
-            ping_nodes(miners, main_sock.getsockname())
-            first_ping = False
-            latest_ping = time.time()
+            # remove miners from the set if they aren't active anymore
+            # miners_to_discard = []
+            # for miner in miners:
+            #     miner_string = f"{miner[0]}:{miner[1]}"
+            #     miner_sock = None
+            #     miner_sock = [sock for sock in connections.keys() if connections[sock] == miner_string][0]
+            #     if miner_sock.fileno() < 0:
+            #         # miner's socket has been closed due to miner shutdown
+            #         miners_to_discard.append(miner)
+            # for miner in miners_to_discard:
+            #     miners.discard(miner)
+
+            # first_ping = False
+            # latest_ping = time.time()
 
         # prune the blockchain collection so that short forks are discarded
         if int(time.time() - latest_prune) > int(Constants.BLOCKCHAIN_FORK_PRUNING_INTERVAL):

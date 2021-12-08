@@ -12,7 +12,7 @@ import sys
 import socket
 from MessageTypes import MessageTypes
 
-N = 10000 # determines number of nonce values to test before
+N = 500000 # determines number of nonce values to test before
           # pausing mining to listen for new messages
 
 class Miner:
@@ -62,7 +62,7 @@ class Miner:
         mining = False
         while True:
             # check if there is a message from the Node
-            readable, _, _ = select.select([parent], [], [], 0.1)
+            readable, _, _ = select.select([parent], [], [], 0.05)
             # if so, deal with it
             if readable:
                 res = Utilities.readMessage(parent)
@@ -81,12 +81,13 @@ class Miner:
             elif hash:
                 # We found a hash before receiving a new block to mine; send back block
                 message = {"Type": MessageTypes.Send_Block, "Block_Index": block.index, "Miner_PK": self.pk,
-                            "Prev_Hash": block.prev_hash, "Nonce": block.nonce, "Hash": block.hash,
+                            "Prev_Hash": block.prev_hash, "Nonce": block.nonce, "Hash": hash,
                             "Transactions": [txn.to_json() for txn in block.transactions], "Previous_Message_Recipients": []}
                 print(f"Message from miner to parent full node after finding a block: \n{message}")
                 Utilities.sendMessage(message, True, None, parent)
                 mining = False
                 block = None
+                hash = None # test
 
             # if we recieved a block from the full node, update our personal
             # block object (which we will convert to a string to mine on)

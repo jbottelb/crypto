@@ -91,33 +91,43 @@ class Utilities:
             return True
         elif msgtype == MessageTypes.Send_Block:
             if len(message.keys()) != 8:
+                print("here 1")
                 return False
             block_index = message.get("Block_Index", -1)
             if block_index == -1 or type(block_index) != int:
+                print("here 2")
                 return False
             miner_pk = message.get("Miner_PK", 0)
             if not miner_pk or type(miner_pk) != str:
+                print("here 3")
                 return False
             prev_hash = message.get("Prev_Hash", 0)
             if not prev_hash or type(prev_hash) != str:
+                print("here 4")
                 return False
             nonce = message.get("Nonce", None)
             if nonce is None or type(nonce) != int:
+                print("here 5")
                 return False
             hash = message.get("Hash", 0)
             if not hash or type(hash) != str:
+                print("here 6")
                 return False
             transactions = message.get("Transactions", None)
             if transactions is None or type(transactions) != list:
+                print("here 7")
                 return False
             for item in transactions:
                 if type(item) != dict:
+                    print("here 8")
                     return False
             prev_recipients = message.get("Previous_Message_Recipients", -1)
             if prev_recipients == -1 or type(prev_recipients) != list:
+                print("here 9")
                 return False
             for item in prev_recipients:
                 if len(item) != 2:
+                    print("here 10")
                     return False
             return True
 
