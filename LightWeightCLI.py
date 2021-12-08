@@ -11,6 +11,7 @@ import json, sys
 from Utilities import Utilities
 from MessageTypes import MessageTypes
 import socket
+from Crypto.Math._IntegerGMP import IntegerGMP
 
 BLOCKCHAIN_COPY = None
 try:
@@ -54,19 +55,19 @@ def create_and_send_transaction(wallet, recipient, amount):
     send_transaction(T)
     print("Transaction sent to Node")
 
-def send_transaction(T):
+def send_transaction(T: Transaction):
     '''
     Sends a transaction to a full node
     '''
-    message = {"Type": MessageTypes.Send_Transaction}
-
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    message["Transaction_ID"] = str(T.tid)
-    message["Sender_Public_Key"] = str(T.sender)
-    message["Recipient_Public_Key"] = str(T.recipient)
-    message["Amount"] = T.amount
-    message["Signature"] = T.signature
+    message = T.to_json(sig=True)
+    message["Type"] = MessageTypes.Send_Transaction
     message["Previous_Message_Recipients"] = []
+    # message["Transaction_ID"] = str(T.tid)
+    # message["Sender_Public_Key"] = str(T.sender)
+    # message["Recipient_Public_Key"] = str(T.recipient)
+    # message["Amount"] = T.amount
+    # message["Signature"] = list(T.signature) # send bytes as array of ints
     sock.connect(URL)
     sock.settimeout(5)
     r = Utilities.sendMessage(message, True, sock=sock)

@@ -46,8 +46,11 @@ class Utilities:
         on the message type.
         Returns: True if valid, False otherwise
         '''
+        print("Got to _isValidMessage")
         msgtype = message.get("Type", 0)
         if not msgtype or msgtype not in [MessageTypes.__dict__[key] for key in MessageTypes.__dict__.keys() if not key.startswith("__")]:
+            print(f"msgtype: {msgtype}")
+            print("not an existing message type?")
             return False
 
         if msgtype == MessageTypes.Get_Seed_Nodes:
@@ -123,7 +126,7 @@ class Utilities:
             if len(message.keys()) != 2:
                 return False
             seed_nodes = message.get("Nodes", 0)
-            if not seed_nodes:
+            if seed_nodes is None:
                 return False
             if type(seed_nodes) != list:
                 return False
@@ -283,9 +286,11 @@ class Utilities:
             if Utilities._isValidMessage(message):
                 print("message is valid")
                 return message
+            else:
+                print("message is not valid 1")
         except:
             # improperly formatted message
-            print("message is not valid")
+            print("message is not valid 2")
             pass
         return None
 
@@ -466,7 +471,7 @@ class Utilities:
         sock.settimeout(5)
         response = Utilities.readMessage(sock)
         if response is None:
-            print("No response in time")
+            print("Request for Blockchain timed out.")
             # issue with response from neighbor
             return None
         # handle responses from full node

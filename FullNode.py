@@ -19,6 +19,7 @@ import time
 from Constants import Constants
 from BlockChainCollection import BlockChainCollection
 from Transaction import Transaction
+# from Crypto.Math._IntegerGMP import IntegerGMP
 
 
 def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: set,
@@ -110,7 +111,7 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
         sender_pk = message["Sender_Public_Key"]
         recipient_pk = message["Recipient_Public_Key"]
         amount = message["Amount"]
-        signature = message["Signature"].encode()
+        signature = bytes(message["Signature"]) # create bytes from array of ints
         prev_recipients = message["Previous_Message_Recipients"]
         new_transaction = Transaction(sender_pk, recipient_pk, amount, tid, signature)
         if new_transaction.verify_transaction_authenticity():

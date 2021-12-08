@@ -55,7 +55,7 @@ class Transaction:
         j["Recipient_Public_Key"]   = str(self.recipient)
         j["Amount"]                 = self.amount
         if self.signature and sig:
-            j["Signature"] = str(self.signature)
+            j["Signature"] = list(self.signature) # convert bytes to list of ints
         return j
 
     def to_string(self, sig=True):
