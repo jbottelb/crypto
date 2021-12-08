@@ -467,30 +467,10 @@ class Utilities:
         if response is None:
             # issue with response from neighbor
             return None
-        # first, handle the genesis block
+        # handle responses from full node
         elif response.get("Type", "") == MessageTypes.Get_Blockchain_Response:
-            block_index = response["Block_Index"]
-            transactions_dicts = message["Transactions"]
-            transaction_objects = []
-            for txn in transactions_dicts:
-                txn_object = Utilities.transactionDictToObject(txn)
-                if txn_object is None:
-                    # invalid transaction in block -> bad blockchain
-                    return None
-                transaction_objects.append(txn_object)
-            hash = message["Hash"]
-            blocks_left_to_come = message["Blocks_Left_To_Come"]
-            if block_index != 0:
-                # incorrect order
-                return None
-            else:
-                # genesis block
-                genesis_dict = {"Block_Index": block_index,
-                                "Transactions": transaction_objects,
-                                "Hash": hash}
-                blocks.append(genesis_dict)
+            blocks_left_to_come = response["Blocks_Left_To_Come"]
         expected_number_of_blocks = blocks_left_to_come + 1
-        # we have the genesis block, now get the remaining normal blocks
         while blocks_left_to_come:
             response = Utilities.readMessage(sock)
             if response is None:
@@ -504,7 +484,7 @@ class Utilities:
             if expected_number_of_blocks - blocks_left_to_come - 1 != block_index:
                 # block with invalid index received
                 return None
-            transactions_dicts = message["Transactions"]
+            transactions_dicts = response["Transactions"]
             transaction_objects = []
             # convert transaction dictionaries to transaction objects
             for txn in transactions_dicts:

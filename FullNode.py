@@ -123,17 +123,11 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
     elif msgtype == MessageTypes.Get_Blockchain:
         # send blocks back one by one
         bc_length = blockchains_collection.main_blockchain.length
-        for index, block in enumerate(blockchains_collection.main_blockchain.block_chain):
-            if index == 0:
-                # send genesis block
-                message = {"Type": MessageTypes.Get_Blockchain_Response, "Block_Index": index,
-                           "Miner_PK": "", "Prev_Hash": "", "Num_Blocks_Left_To_Come": bc_length-1,
-                           "Nonce": 0, "Hash": block["Hash"], "Transactions": [txn.to_json() for txn in block["Transactions"]]}
-            else:
-                # send a regular block
-                message = {"Type": MessageTypes.Get_Blockchain_Response, "Block_Index": index,
-                           "Miner_PK": block.miner_pk, "Prev_Hash": block.prev_hash, "Num_Blocks_Left_To_Come": bc_length-index-1,
-                           "Nonce": block.nonce, "Hash": block.hash, "Transactions": [txn.to_json() for txn in block.transactions]}
+        for block in blockchains_collection.main_blockchain.block_chain:
+            # don't send genesis block, it's part of the protocol, so others will have it
+            message = {"Type": MessageTypes.Get_Blockchain_Response, "Block_Index": block.index,
+                        "Miner_PK": block.miner_pk, "Prev_Hash": block.prev_hash, "Num_Blocks_Left_To_Come": bc_length-block.index-1,
+                        "Nonce": block.nonce, "Hash": block.hash, "Transactions": [txn.to_json() for txn in block.transactions]}
             Utilities.sendMessage(message, True, sock=sock, connections=connections)
 
 def ping_nodes(nodes: set):
