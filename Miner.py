@@ -82,7 +82,7 @@ class Miner:
                 # We found a hash before receiving a new block to mine; send back block
                 message = {"Type": MessageTypes.Send_Block, "Block_Index": block.index, "Miner_PK": self.pk,
                             "Prev_Hash": block.prev_hash, "Nonce": block.nonce, "Hash": block.hash,
-                            "Transactions": block.transactions, "Previous_Message_Recipients": []}
+                            "Transactions": [txn.to_json() for txn in block.transactions], "Previous_Message_Recipients": []}
                 print(f"Message from miner to parent full node after finding a block: \n{message}")
                 Utilities.sendMessage(message, True, None, parent)
                 mining = False

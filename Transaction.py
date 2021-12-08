@@ -53,7 +53,7 @@ class Transaction:
         j["Transaction_ID"]         = str(self.tid)
         j["Sender_Public_Key"]      = str(self.sender)
         j["Recipient_Public_Key"]   = str(self.recipient)
-        j["Amount"]                 = str(self.amount)
+        j["Amount"]                 = self.amount
         if self.signature and sig:
             j["Signature"] = str(self.signature)
         return j
