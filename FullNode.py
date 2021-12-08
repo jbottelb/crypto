@@ -122,8 +122,8 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
                 Utilities.sendMessage(message)
     elif msgtype == MessageTypes.Get_Blockchain:
         # send blocks back one by one
-        bc_length = blockchains_collection.main_blockchain
-        for index, block in enumerate(blockchains_collection.main_blockchain):
+        bc_length = blockchains_collection.main_blockchain.length
+        for index, block in enumerate(blockchains_collection.main_blockchain.block_chain):
             if index == 0:
                 # send genesis block
                 message = {"Type": MessageTypes.Get_Blockchain_Response, "Block_Index": index,
@@ -284,7 +284,7 @@ def main():
 
         # listen for a second for a readable socket
         readable, writeable, exceptional = select.select(connections.keys(), [], [], 1)
-        
+
         for sock in readable:
             # main socket has bytes to read, means we should accept
             # an incoming connection and store a socket for it

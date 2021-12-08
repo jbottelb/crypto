@@ -13,6 +13,7 @@ from MessageTypes import MessageTypes
 import socket
 
 BLOCKCHAIN_COPY = None
+URL = ("localhost", 8401)
 
 def prompt():
     print("                                         \n\
@@ -62,15 +63,16 @@ def send_transaction(T):
     message["Amount"] = T.amount
     message["Signature"] = T.signature
     message["Previous_Message_Recipients"] = []
-    sock.connect(("localhost", 8400))
-    Utilities.sendMessage(message, True, sock=sock)
+    sock.connect(URL)
     sock.settimeout(5)
-    response = Utilities.readMessage(sock)
+    Utilities.sendMessage(message, True, sock=sock)
+
     if response is not None:
-        if response.get("Type", 0) != MessageTypes.Join_As_Miner_Response or response.get("Decision", '') != "Yes":
-            print("Should have gotten an affirmative join as miner response")
-            return 0
+        return 0
     return 1
+
+def get_blockchain():
+    print(Utilities.getBlockchain(URL))
 
 def main():
     wallet = None
@@ -87,7 +89,7 @@ def main():
         elif choice[0] == "b":
             pass
         elif choice[0] == "u":
-            pass
+            BLOCKCHAIN_COPY = get_blockchain()
         else:
             print("Invalid choice")
         #except Exception as e:
