@@ -420,7 +420,8 @@ class Utilities:
             msgString = json.dumps(message)
             msgBytes = bytearray(msgString.encode('utf-8'))
             sock.sendall(msgBytes)
-        except:
+        except Exception as e:
+            print(e)
             # error sending message
             return 0
         if not keepSocketOpen:
@@ -465,6 +466,7 @@ class Utilities:
         sock.settimeout(5)
         response = Utilities.readMessage(sock)
         if response is None:
+            print("No response in time")
             # issue with response from neighbor
             return None
         # handle responses from full node

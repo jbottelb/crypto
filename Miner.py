@@ -129,7 +129,7 @@ class Miner:
         return hash
 
 if __name__ == "__main__":
-    if len(sys.argv != 3):
+    if len(sys.argv) != 3:
         print("Usage: python3 Miner.py <Miner public key> <Full node host> <Full node port>")
     miner_pk = sys.argv[1]
     host = sys.argv[2]

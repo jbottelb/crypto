@@ -104,6 +104,7 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
                        "Previous_Message_Recipients": []}
             Utilities.sendMessage(message, sock=sock)
     elif msgtype == MessageTypes.Send_Transaction:
+        print("Yay transcatio")
         # when we get a transaction, just verify that it's been signed
         # correcty and then broadcast it
         tid = message["Transaction"]
@@ -121,6 +122,7 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
             for n in neighbors:
                 Utilities.sendMessage(message)
     elif msgtype == MessageTypes.Get_Blockchain:
+        print("Blockchain handling")
         # send blocks back one by one
         bc_length = blockchains_collection.main_blockchain.length
         for block in blockchains_collection.main_blockchain.block_chain[1:]:

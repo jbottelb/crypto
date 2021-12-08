@@ -7,13 +7,17 @@ from BlockChain import BlockChain, Block
 from Transaction import Transaction
 from RSA_Keys import RSA_Keys as RK
 from Wallet import Wallet
-import json
+import json, sys
 from Utilities import Utilities
 from MessageTypes import MessageTypes
 import socket
 
 BLOCKCHAIN_COPY = None
-URL = ("localhost", 8401)
+try:
+    URL = (sys.argv[1], int(sys.argv[2]))
+except Exception as e:
+    print(e)
+    exit(1)
 
 def prompt():
     print("                                         \n\
@@ -57,19 +61,18 @@ def send_transaction(T):
     message = {"Type": MessageTypes.Send_Transaction}
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    message["Transaction_ID"] = T.tid
-    message["Sender_Public_Key"] = T.sender
-    message["Recipient_Public_Key"] = T.recipient
+    message["Transaction_ID"] = str(T.tid)
+    message["Sender_Public_Key"] = str(T.sender)
+    message["Recipient_Public_Key"] = str(T.recipient)
     message["Amount"] = T.amount
-    message["Signature"] = T.signature
+    print(T.signature)
+    print(str(T.signature))
+    message["Signature"] = str(T.signature)
     message["Previous_Message_Recipients"] = []
     sock.connect(URL)
     sock.settimeout(5)
-    Utilities.sendMessage(message, True, sock=sock)
-
-    if response is not None:
-        return 0
-    return 1
+    r = Utilities.sendMessage(message, True, sock=sock)
+    print(r)
 
 def get_blockchain():
     print(Utilities.getBlockchain(URL))
@@ -77,6 +80,7 @@ def get_blockchain():
 def main():
     wallet = None
     choice = prompt()
+    print()
     while choice != "q":
         #try:
         choice = choice.split(" ")
