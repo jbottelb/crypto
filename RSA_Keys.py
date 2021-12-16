@@ -38,7 +38,6 @@ class RSA_Keys:
             return False
         return True
 
-
 if __name__ == "__main__":
     '''
     Test cases for keys

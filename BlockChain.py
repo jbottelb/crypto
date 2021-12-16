@@ -12,7 +12,7 @@ import json
 from hashlib import sha256
 from Transaction import Transaction
 from collections import defaultdict
-from Constants import Constants
+import Constants
 
 class Block:
     def __init__(self, index, prev_hash, pk, nonce=None, transactions=None, hash=None):
@@ -50,7 +50,7 @@ class Block:
                 return False
         return True
 
-    def verify_transactions_are_fundable(self, user_balances: defaultdict):
+    def verify_transactions_are_fundable(self, user_balances):
         '''
         Takes in a BlockChain object's dictionary of user balances and
         determines if all transaction senders have sufficient balances
@@ -97,6 +97,9 @@ class Block:
         return block_str
 
     def string_for_mining(self):
+        '''
+        a string for mining can not have the hash
+        '''
         block_str = ""
         block_str += "Block index: " + str(self.index) + "\n"
         block_str += "Prev Hash: " + str(self.prev_hash) + "\n"
@@ -124,7 +127,7 @@ class BlockChain:
             for block in data:
                 self.add_block(block)
 
-    def create_genesis(self, data=None) -> dict:
+    def create_genesis(self, data=None):
         '''
         Import a genesis text file, if it exists
         Otherwise, create a block where data will be a list of
@@ -143,12 +146,10 @@ class BlockChain:
         self.length = 1
         for T in block["Transactions"]:
             self.user_balances[T[0]] = int(T[1])
-        # genesis can have any hash (doesn't need to be mined for a specific
-        # difficulty)
         block["Hash"] = sha256(json.dumps(block).encode()).hexdigest()
         return block
 
-    def add_block(self, block, genesis=False) -> bool:
+    def add_block(self, block, genesis=False):
         '''
         Adds a block item to the block chain list.
         Block should be a block object unless genesis is True,
@@ -170,14 +171,12 @@ class BlockChain:
         self.length += 1
         return True
 
-    def validate_transaction(self, T: Transaction):
+    def validate_transaction(self, T):
         '''
         Check if the sender of the transcation can send the amount
         based off thier total in a blockchain
         '''
-        if self.user_balances[T["Sender_Public_Key"]] < T["Amount"]:
-            return False
-        return True
+        return self.user_balances[T["Sender_Public_Key"]] >= T["Amount"]
 
     def validate_block(self, block: Block) -> bool:
         '''
@@ -190,7 +189,7 @@ class BlockChain:
             return False
         # verify that none of the new transactions are already in the blockchain
         if block.index == 0:
-            # genesis block is a dict
+            # genesis block is a dict, we are pretty much always going to add it
             return True
         else:
             # other blocks are block objects
@@ -221,13 +220,13 @@ class BlockChain:
             return False
         return True
 
-    def get_pk_total(self, pk) -> defaultdict:
+    def get_pk_total(self, pk):
         '''
         Gets the total balance of a user throught the blockchain
         '''
         return self.user_balances[pk]
 
-    def verify_blockchain(self) -> bool:
+    def verify_blockchain(self):
         '''
         Verifies entire blockchain. Genesis block is assumed valid
         except hash.
@@ -296,4 +295,3 @@ class BlockChain:
                 continue
             copy.add_block(block)
         return copy
-

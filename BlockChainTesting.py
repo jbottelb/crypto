@@ -7,13 +7,13 @@ import json
 from hashlib import sha256
 from Transaction import Transaction
 from collections import defaultdict
-from Constants import Constants
+import Constants
 from BlockChain import Block, BlockChain
-
 
 if __name__=="__main__":
     '''
     Testsing the Blockchain class
+    TODO: Concvert this to unit testing
     '''
     with open("wallets.json") as f:
         wallets = json.load(f)

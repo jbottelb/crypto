@@ -8,7 +8,7 @@ from Transaction import Transaction
 from RSA_Keys import RSA_Keys as RK
 from Wallet import Wallet
 import json, sys
-from Utilities import Utilities
+from Messaging import Messaging
 from MessageTypes import MessageTypes
 import socket
 from Crypto.Math._IntegerGMP import IntegerGMP
@@ -106,7 +106,7 @@ def get_blockchain(trusted_node) -> BlockChain:
     except:
         print("Blockchain update could not be performed")
         return None
-        
+
 
 def get_wallet_balance(wallet: Wallet, blockchain_copy: BlockChain):
     return blockchain_copy.user_balances[wallet.public_key]

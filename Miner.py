@@ -2,15 +2,14 @@
 '''
 Implementation of a miner node
 '''
-
-from Constants import Constants
+import Constants
 from BlockChain import Block
 from hashlib import sha256
-from Utilities import Utilities
+from Messaging import Messaging
 import select
 import sys
 import socket
-from MessageTypes import MessageTypes
+from Messaging import MessageTypes
 import random
 
 N = 500000 # determines number of nonce values to test before

@@ -16,7 +16,7 @@ state of that fork)
 
 from BlockChain import Block, BlockChain
 from Transaction import Transaction
-from Constants import Constants
+import Constants
 
 class BlockChainCollection:
 
@@ -130,7 +130,7 @@ class BlockChainCollection:
                                     if txn["Transaction_ID"] == t.tid:
                                         transactions_to_discard.append(t)
                             for txn in transactions_to_discard:
-                                pending_transactions.discard(txn)   
+                                pending_transactions.discard(txn)
                             common_ancestor_index = 0
                         # now handle blocks from after common_ancestor and onwards
                         for divergent_block in self.main_blockchain.block_chain[common_ancestor_index+1:]:
