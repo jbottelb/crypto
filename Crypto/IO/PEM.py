@@ -1,5 +1,5 @@
 #
-#  Util/PEM.py : Privacy Enhanced Mail utilities
+#  Util/PEM.py : Privacy Enhanced Mail Messaging
 #
 # ===================================================================
 #

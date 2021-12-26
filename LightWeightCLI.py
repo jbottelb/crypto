@@ -8,7 +8,7 @@ from Transaction import Transaction
 from RSA_Keys import RSA_Keys as RK
 from Wallet import Wallet
 import json, sys
-from Utilities import Utilities
+from Messaging import Messaging
 from MessageTypes import MessageTypes
 import socket
 from Crypto.Math._IntegerGMP import IntegerGMP
@@ -75,14 +75,14 @@ def send_transaction(T: Transaction, trusted_node):
     # message["Signature"] = list(T.signature) # send bytes as array of ints
     sock.connect(trusted_node)
     sock.settimeout(5)
-    r = Utilities.sendMessage(message, True, sock=sock, connections={})
+    r = Messaging.sendMessage(message, True, sock=sock, connections={})
     if r:
         print("Transaction sent to Node")
     else:
         print("Issue sending block to trusted node")
         return
     try:
-        response = Utilities.readMessage(sock)
+        response = Messaging.readMessage(sock)
         if response is None:
             print("Unable to determine if transaction was deemed valid by trusted node")
             return
@@ -96,7 +96,7 @@ def send_transaction(T: Transaction, trusted_node):
 
 def get_blockchain(trusted_node) -> BlockChain:
     try:
-        bc = Utilities.getBlockchain(trusted_node)
+        bc = Messaging.getBlockchain(trusted_node)
         if bc is not None:
             print("Updated local Blockchain copy")
             return bc
@@ -132,7 +132,7 @@ def main():
             print("Usage: python3 LightWeightCLI.py <trusted host> <port on trusted host>")
             exit(-1)
     if trusted_node_provided:
-        if not Utilities.pingNode(trusted_node):
+        if not Messaging.pingNode(trusted_node):
             print("Trusted node not running")
             exit(-1)
         else:
@@ -141,7 +141,7 @@ def main():
     # request seed nodes if we have no trusted host to start with
     else:
         active_seeds = None
-        active_seeds = Utilities.getActiveSeedNodes()
+        active_seeds = Messaging.getActiveSeedNodes()
         if active_seeds is not None:
             trusted_node = tuple(active_seeds[0])
 

@@ -13,7 +13,7 @@ import socket
 import sys
 import select
 from MessageTypes import MessageTypes
-from Utilities import Utilities
+from Messaging import Messaging
 from BlockChain import BlockChain, Block
 import time
 from Constants import Constants
@@ -60,10 +60,10 @@ def try_start_mining_new_block(currently_mining: bool, transactions_being_mined:
             try:
                 # the socket with our miner still exists, use it
                 miner_sock = [sock for sock in connections.keys() if connections[sock] == miner_string][0]
-                Utilities.sendMessage(message, True, miner, miner_sock, connections)
+                Messaging.sendMessage(message, True, miner, miner_sock, connections)
             except:
                 # try a new socket with our miner
-                Utilities.sendMessage(message, True, miner, None, connections)
+                Messaging.sendMessage(message, True, miner, None, connections)
         currently_mining = True
         transactions_being_mined = transactions_obj_list
 
@@ -84,7 +84,7 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
     if msgtype == MessageTypes.Get_Neighbors:
         response = {"Type": MessageTypes.Get_Neighbors_Response, "Neighbors": neighbors}
         # send our neighbors to the full node that is requesting them
-        Utilities.sendMessage(response, False, sock=sock, connections=connections)
+        Messaging.sendMessage(response, False, sock=sock, connections=connections)
     elif msgtype == MessageTypes.Get_Neighbors_Response:
         for neigh in message.get("Neighbors", []):
             neighbors.add(tuple(neigh))
@@ -98,7 +98,7 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
         miners.add(miner_addr_tuple)
         # send decision to miner so it knows we accepted it and will send
         # tasks its way soon; keep socket open and save it
-        Utilities.sendMessage(response, True, sock=sock, connections=connections)
+        Messaging.sendMessage(response, True, sock=sock, connections=connections)
     elif msgtype == MessageTypes.Send_Block:
         hash = message["Hash"]
         if hash in block_hashes_seen_before:
@@ -106,7 +106,7 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
             return
         else:
             block_hashes_seen_before.add(hash)
-        transactions = [Utilities.transactionDictToObject(txn) for txn in message["Transactions"]]
+        transactions = [Messaging.transactionDictToObject(txn) for txn in message["Transactions"]]
         new_block = Block(message["Block_Index"], message["Prev_Hash"], message["Miner_PK"],
                           message["Nonce"], transactions, message["Hash"])
         if sock.getpeername() in miners:
@@ -126,7 +126,7 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
                 # block is in our main blockchain fork, forward block to neighbors
                 message["Previous_Message_Recipients"] = [main_sock.getsockname()]
                 for n in neighbors:
-                    Utilities.sendMessage(message, addr=n)
+                    Messaging.sendMessage(message, addr=n)
 
             try_start_mining_new_block(currently_mining, transactions_being_mined, miners, pending_transactions,
                                        connections, blockchains_collection)
@@ -138,12 +138,12 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
                 # block is in our main blockchain fork, forward block to neigbors
                 message["Previous_Message_Recipients"].append(main_sock.getsockname())
                 for n in neighbors:
-                    Utilities.sendMessage(message, addr=n)
+                    Messaging.sendMessage(message, addr=n)
             elif rc == 0:
                 # block was an orphan, try to get its parent from our neighbors
                 message = {"Type": MessageTypes.Get_Block, "Hash": new_block.hash}
                 for n in neighbors:
-                    Utilities.sendMessage(message, addr=n)
+                    Messaging.sendMessage(message, addr=n)
 
             # start mining a new block if the incoming block adds onto our main chain
             if rc == 1 or rc == 3:
@@ -160,7 +160,7 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
                        "Miner_PK": block.miner_pk, "Prev_Hash": block.prev_hash,
                        "Nonce": block.nonce, "Hash": block.hash, "Transactions": [txn.to_json() for txn in block.transactions],
                        "Previous_Message_Recipients": []}
-            Utilities.sendMessage(message, sock=sock)
+            Messaging.sendMessage(message, sock=sock)
     elif msgtype == MessageTypes.Send_Transaction:
         # When we get a transaction, verify that it's been signed
         # correcty and then broadcast it. If we aren't mining right now,
@@ -190,7 +190,7 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
                 message["Previous_Message_Recipients"] = prev_recipients
                 print("Forwarding transaction to neighbors")
                 for n in neighbors:
-                    Utilities.sendMessage(message, addr=n)
+                    Messaging.sendMessage(message, addr=n)
             # tell sender whether or not we though the transaction was valid
             # (will be used by lightweight nodes)
             if blockchains_collection.main_blockchain.user_balances.get(sender_pk, 0) < amount:
@@ -200,11 +200,11 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
                 # sender balance sufficient -> valid
                 response = {"Type": MessageTypes.Send_Transaction_Response, "Valid": "Yes"}
                 print(f"pending_transactions: {pending_transactions}")
-            Utilities.sendMessage(response, False, sock=sock)
+            Messaging.sendMessage(response, False, sock=sock)
         else:
             # transaction not authentic -> not valid
             response = {"Type": MessageTypes.Send_Transaction_Response, "Valid": "No"}
-            Utilities.sendMessage(response, False, sock=sock)
+            Messaging.sendMessage(response, False, sock=sock)
         
         # if we aren't mining right now, send a block to miners with up to
         # TPB pending_transactions
@@ -221,7 +221,7 @@ def handle_message(sock: socket.socket, message: dict, neighbors: set, miners: s
             message = {"Type": MessageTypes.Get_Blockchain_Response, "Block_Index": block.index,
                         "Miner_PK": block.miner_pk, "Prev_Hash": block.prev_hash, "Num_Blocks_Left_To_Come": bc_length-block.index-1,
                         "Nonce": block.nonce, "Hash": block.hash, "Transactions": [txn.to_json() for txn in block.transactions]}
-            Utilities.sendMessage(message, True, sock=sock, connections=connections)
+            Messaging.sendMessage(message, True, sock=sock, connections=connections)
 
 def ping_nodes(nodes: set, self_address: tuple):
     '''
@@ -233,7 +233,7 @@ def ping_nodes(nodes: set, self_address: tuple):
         if node == self_address:
             # don't ping yourself
             continue
-        rc = Utilities.pingNode(node)
+        rc = Messaging.pingNode(node)
         if not rc:
             nodes_to_remove.append(node)
     for node in nodes_to_remove:
@@ -279,31 +279,31 @@ def main():
 
     # handle having a trusted host to start with (As a full node)
     if trusted_host is not None:
-        new_neighbors = Utilities.getNeighbors(trusted_host)
+        new_neighbors = Messaging.getNeighbors(trusted_host)
         if new_neighbors is not None:
             neighbors = set([tuple(node) for node in new_neighbors])
             neighbors.add(trusted_host)
         # fallback to seed nodes if needed
         elif new_neighbors is None or len(neighbors) == 1:
-            active_seeds = Utilities.getActiveSeedNodes()
+            active_seeds = Messaging.getActiveSeedNodes()
             if active_seeds is not None:
                 for node in active_seeds:
                     neighbors.add(tuple(node))
                 # also get neighbors of the seed nodes
                 for node in active_seeds:
-                    new_neighbors = Utilities.getNeighbors(node)
+                    new_neighbors = Messaging.getNeighbors(node)
                     if new_neighbors is not None:
                         for nn in new_neighbors:
                             neighbors.add(tuple(nn))
     else:
         # request seed nodes if we have no trusted host to start with
         active_seeds = None
-        active_seeds = Utilities.getActiveSeedNodes()
+        active_seeds = Messaging.getActiveSeedNodes()
         if active_seeds is not None:
             neighbors = set([tuple(node) for node in active_seeds])
             # also get neighbors of the seed nodes
             for node in active_seeds:
-                new_neighbors = Utilities.getNeighbors(node)
+                new_neighbors = Messaging.getNeighbors(node)
                 if new_neighbors is not None:
                     for nn in new_neighbors:
                         neighbors.add(tuple(nn))
@@ -328,7 +328,7 @@ def main():
     longest_bc = None
     tied_length_blockchains = []
     for n in neighbors:
-        bc = Utilities.getBlockchain(n)
+        bc = Messaging.getBlockchain(n)
         if not bc:
             continue
         if len(bc.block_chain) > longest_bc:
@@ -384,7 +384,7 @@ def main():
             # a connection
             else:
                 # read from the socket
-                message = Utilities.readMessage(sock, connections)
+                message = Messaging.readMessage(sock, connections)
                 if message is not None:
                     handle_message(sock, message, neighbors, miners, blockchains_collection,
                                    connections, orphan_blocks, pending_transactions, block_hashes_seen_before,

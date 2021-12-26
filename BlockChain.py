@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 '''
-Brad Budden and Josh Bottelberghe
+Josh Bottelberghe
 Distributed Systems - Final Project
 BlockChain.py
 
@@ -148,7 +148,7 @@ class BlockChain:
         block["Hash"] = sha256(json.dumps(block).encode()).hexdigest()
         return block
 
-    def add_block(self, block, genesis=False) -> bool:
+    def add_block(self, block, genesis=False):
         '''
         Adds a block item to the block chain list.
         Block should be a block object unless genesis is True,
@@ -179,7 +179,7 @@ class BlockChain:
             return False
         return True
 
-    def validate_block(self, block: Block) -> bool:
+    def validate_block(self, block: Block):
         '''
         Checks if the block is valid and can be added to the chain.
         Checks the block's transcations, hash, index, and previous hash
@@ -221,13 +221,13 @@ class BlockChain:
             return False
         return True
 
-    def get_pk_total(self, pk) -> defaultdict:
+    def get_pk_total(self, pk):
         '''
         Gets the total balance of a user throught the blockchain
         '''
         return self.user_balances[pk]
 
-    def verify_blockchain(self) -> bool:
+    def verify_blockchain(self):
         '''
         Verifies entire blockchain. Genesis block is assumed valid
         except hash.

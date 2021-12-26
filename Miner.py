@@ -3,10 +3,10 @@
 Implementation of a miner node
 '''
 
-from Constants import Constants
+import Constants
 from BlockChain import Block
 from hashlib import sha256
-from Utilities import Utilities
+from Messaging import Messaging
 import select
 import sys
 import socket
@@ -34,9 +34,9 @@ class Miner:
         Returns: 1 if successful, 0 otherwise
         '''
         message = {"Type": MessageTypes.Join_As_Miner}
-        Utilities.sendMessage(message, True, sock=parent)
+        Messaging.sendMessage(message, True, sock=parent)
         parent.settimeout(5)
-        response = Utilities.readMessage(parent)
+        response = Messaging.readMessage(parent)
         if response is not None:
             if response.get("Type", 0) != MessageTypes.Join_As_Miner_Response or response.get("Decision", '') != "Yes":
                 print("Should have gotten an affirmative join as miner response")
@@ -66,7 +66,7 @@ class Miner:
             readable, _, _ = select.select([parent], [], [], 0.05)
             # if so, deal with it
             if readable:
-                res = Utilities.readMessage(parent)
+                res = Messaging.readMessage(parent)
                 if res is None or res.get("Type", '') != MessageTypes.Start_New_Block:
                     continue
                 try:
@@ -75,7 +75,7 @@ class Miner:
                     block_index = res.get("Block_Index", -1)
                     block = Block(block_index, previous_hash, '')
                     for t in transactions:
-                        block.add_transaction(Utilities.transactionDictToObject(t))
+                        block.add_transaction(Messaging.transactionDictToObject(t))
                 except Exception as e:
                     print(e)
                     block = None
@@ -85,7 +85,7 @@ class Miner:
                             "Prev_Hash": block.prev_hash, "Nonce": block.nonce, "Hash": hash,
                             "Transactions": [txn.to_json() for txn in block.transactions], "Previous_Message_Recipients": []}
                 print(f"Message from miner to parent full node after finding a block: \n{message}")
-                Utilities.sendMessage(message, True, None, parent)
+                Messaging.sendMessage(message, True, None, parent)
                 mining = False
                 block = None
 

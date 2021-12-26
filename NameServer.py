@@ -26,7 +26,7 @@ import json
 
 from MessageTypes import MessageTypes
 from Constants import Constants
-from Utilities import Utilities
+from Messaging import Messaging
 
 active_seeds = set()
 possible_seeds = set()
@@ -37,7 +37,7 @@ def getActiveSeedsResponseDict():
 
 def pingSeedNodes():
     for ps in possible_seeds:
-        if Utilities.pingNode(ps):
+        if Messaging.pingNode(ps):
             # yes -> add to active seeds
             active_seeds.add(ps)
         else:
@@ -53,7 +53,7 @@ def handleMessage(sock: socket.socket, message: dict, connections: dict):
     if message.get("Type", 0) == MessageTypes.Get_Seed_Nodes:
         # appropriate request, return list of seed nodes
         responsedict = getActiveSeedsResponseDict()
-        rc = Utilities.sendMessage(responsedict, False, sock=sock, connections=connections)
+        rc = Messaging.sendMessage(responsedict, False, sock=sock, connections=connections)
     else:
         # improperly formatted request for seed node addresses
         sock.close()
@@ -134,7 +134,7 @@ def main():
             else:
                 # read from the socket
                 print(f"New request from : {connections[sock]}")
-                message = Utilities.readMessage(sock, connections)
+                message = Messaging.readMessage(sock, connections)
                 if message is None:
                     continue
                 else:
