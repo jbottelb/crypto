@@ -1,17 +1,9 @@
 '''
-Brad Budden and Josh Bottelberghe
+Josh Bottelberghe
 Distributed Systems - Final Project
 BlockChainCollection.py
 
-Description: This class will implement
-the management of multiple forks of
-blockchains. It will identify the main
-fork and handle insertions of new blocks
-into an appropriate fork based on the
-prev_hash of the block and the block's
-validity in that fork (i.e., whether
-transactions are valid based on the
-state of that fork)
+Description: This is super bad, will probably delete and replace
 '''
 
 from BlockChain import Block, BlockChain

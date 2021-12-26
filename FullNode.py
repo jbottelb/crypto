@@ -12,8 +12,7 @@ expected from a full node in our system.
 import socket
 import sys
 import select
-from MessageTypes import MessageTypes
-from Messaging import Messaging
+from Messaging import Messaging, MessageTypes
 from BlockChain import BlockChain, Block
 import time
 from Constants import Constants

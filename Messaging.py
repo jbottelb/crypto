@@ -13,7 +13,6 @@ import socket
 import json
 import http.client
 from BlockChain import BlockChain, Block
-from MessageTypes import MessageTypes
 import Constants
 from Transaction import Transaction
 from BlockChainCollection import BlockChainCollection

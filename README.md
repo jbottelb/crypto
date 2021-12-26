@@ -32,3 +32,7 @@ Loads Josh's Keys and sends Brad 10 Coin \
 ---> l Josh_Keys.json \
 ---> t 10 \
 ---> Brad
+
+
+### Status
+ - Currently in clean up to fix code base
