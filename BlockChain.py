@@ -12,7 +12,7 @@ import json
 from hashlib import sha256
 from Transaction import Transaction
 from collections import defaultdict
-from Constants import Constants
+import Constants
 
 class Block:
     def __init__(self, index, prev_hash, pk, nonce=None, transactions=None, hash=None):
@@ -27,10 +27,7 @@ class Block:
             self.transactions = transactions
         else:
             self.transactions = []
-        if hash:
-            self.hash = hash
-        else:
-            self.hash = None
+        self.hash = None
 
     def add_transaction(self, transaction):
         self.transactions.append(transaction)

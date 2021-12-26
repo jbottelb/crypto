@@ -15,7 +15,6 @@ import http.client
 from BlockChain import BlockChain, Block
 import Constants
 from Transaction import Transaction
-from BlockChainCollection import BlockChainCollection
 
 class MessageTypes:
     Get_Seed_Nodes = "Get_Seed_Nodes"

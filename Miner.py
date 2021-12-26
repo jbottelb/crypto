@@ -28,7 +28,7 @@ class Miner:
         self.difficulty = d
 
     # connect to the provided full node
-    def join_as_miner(self, parent: socket.socket):
+    def join_as_miner(self, parent):
         '''
         Attempts to join the full node as a miner.
         Returns: 1 if successful, 0 otherwise
@@ -44,7 +44,7 @@ class Miner:
         return 1
 
 
-    def run(self, full_node_addr: tuple):
+    def run(self, full_node_addr):
         parent = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         parent.connect(full_node_addr)
         try:

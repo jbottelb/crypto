@@ -8,8 +8,7 @@ from Transaction import Transaction
 from RSA_Keys import RSA_Keys as RK
 from Wallet import Wallet
 import json, sys
-from Messaging import Messaging
-from MessageTypes import MessageTypes
+from Messaging import Messaging,  MessageTypes
 import socket
 from Crypto.Math._IntegerGMP import IntegerGMP
 
