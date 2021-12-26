@@ -1,5 +1,6 @@
 # Crypto
-Repository for cryptocurrency for Distributed System projectby Brad Budden and Josh Bottelberghe
+This was a repository for a dist sys project, but it has sense been removed of partners code
+and cleaned up so I may continue to develop it on my own. 
 
 ### Documentation
 [Link Final Report](https://docs.google.com/document/d/1uQHn7B0NYk4viWjS4KtepPNqXG3mw2oChBbH1RgqB5U/edit?usp=sharing)\

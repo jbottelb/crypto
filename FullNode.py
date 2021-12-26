@@ -21,9 +21,9 @@ from Transaction import Transaction
 # from Crypto.Math._IntegerGMP import IntegerGMP
 
 
-def try_start_mining_new_block(currently_mining: bool, transactions_being_mined: set,
-                               miners: set, pending_transactions: set, connections: dict, 
-                               blockchains_collection: BlockChainCollection):
+def try_start_mining_new_block(currently_mining, transactions_being_mined,
+                               miners, pending_transactions, connections, 
+                               blockchains_collection):
     '''
     This function is called when our handle_message function determines
     that we need to start mining a new block. Happens in three cases:
@@ -240,7 +240,6 @@ def ping_nodes(nodes: set, self_address: tuple):
         nodes.discard(node)
 
 def main():
-
     if len(sys.argv) < 2 or len(sys.argv) > 4:
         print("Usage: FullNode.py <port> [--trusted <trusted_hostname:port>]")
         exit(-1)
