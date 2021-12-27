@@ -4,9 +4,7 @@ Implementation of a miner node
 '''
 import sys
 from context import Blockchain
-from Blockchain import Constants, BlockChain, Transaction, Messaging
-
-
+from Blockchain import Constants, BlockChain, Block, Transaction, Messaging, MessageTypes
 from hashlib import sha256
 import select
 import socket
