@@ -36,4 +36,5 @@ Loads Josh's Keys and sends Brad 10 Coin \
 
 
 ### Status
- - Currently in clean up to fix code base
+ - Rewriting flies to be in a professional setup. 
+ - Moving the Full Node to be an object, as it prbably should have been all along
