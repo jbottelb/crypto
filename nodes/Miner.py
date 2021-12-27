@@ -2,15 +2,14 @@
 '''
 Implementation of a miner node
 '''
-
-import Constants
-from BlockChain import Block
-from hashlib import sha256
-from Messaging import Messaging
-import select
 import sys
+from context import Blockchain
+from Blockchain import Constants, BlockChain, Transaction, Messaging
+
+
+from hashlib import sha256
+import select
 import socket
-from MessageTypes import MessageTypes
 import random
 
 N = 500000 # determines number of nonce values to test before
@@ -140,6 +139,7 @@ class Miner:
 if __name__ == "__main__":
     if len(sys.argv) != 4:
         print("Usage: python3 Miner.py <Miner public key> <Full node host> <Full node port>")
+        exit(1)
     miner_pk = Miner.decorate_miner_public_key(sys.argv[1])
     host = sys.argv[2]
     port = sys.argv[3]
